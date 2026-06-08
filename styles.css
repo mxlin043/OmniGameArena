@@ -128,6 +128,7 @@ section:first-of-type { border-top: 0; }
   box-shadow: 0 6px 18px rgba(0,0,0,0.14);
 }
 .btn svg, .btn img { width: 17px; height: 17px; object-fit: contain; }
+.btn img.eagle { width: 26px; height: 20px; }  /* Eagle logo is landscape with a wordmark; give it more room than the square icons so it reads */
 .btn.ghost { background: #fff; color: var(--ink); border-color: var(--line-strong); }
 .btn.ghost:hover { background: var(--bg-soft); box-shadow: none; }
 .btn.soon { background: #eef0f3; color: var(--faint); border-color: var(--line); cursor: default; }
