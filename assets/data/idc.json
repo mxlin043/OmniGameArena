@@ -1,0 +1,430 @@
+[
+ {
+  "slug": "last",
+  "name": "LastStand",
+  "coop": false,
+  "varDescs": {"v1": "Same mechanics as origin with a new random seed; each tile drops on its own, not in connected clusters.", "v2": "Tiles drop in connected clusters of multiple tiles.", "v3": "Same as origin, plus one extra tile (the one nearest the character) drops each step, so the drops track the player."},
+  "models": [
+   {
+    "key": "opus46",
+    "name": "Claude Opus 4.6",
+    "logo": "claude",
+    "skill": "# LastStand / claude-opus-4-6\n\nBest measured origin round: R7\n\n- This is a survival game: you stand on a tiled platform where tiles progressively turn red (warning) then fall away. Your only goal is to stay alive as long as possible -- score increases linearly with survival time.\n\n- Your default action is absolute stillness -- no movement inputs. Stay still for as many consecutive steps as possible. Every movement risks walking into a gap; stillness on a safe tile carries zero risk. Commit to stillness within the first few steps once you find any safe gray tile.\n\n- Camera rotation is completely safe and costs nothing. Use camera turns to scan your surroundings without moving your character. Proactively rotate the camera to check all directions, especially once holes start appearing on multiple sides.\n\n- The ONLY reason to move is if the tile directly UNDER your character has turned red. Before moving, explicitly verify: \"Is MY tile red?\" If your tile is gray, do NOT move -- regardless of how many red tiles or gaps you see nearby. Adjacent red tiles are not your problem until they become gaps, and even then you only move if your own tile is threatened.\n\n- Moving into a gap is always fatal and always worse than staying on a tile that might turn red soon. A red tile gives you at least one full step of warning before it falls. Treat unnecessary movement as more dangerous than a nearby red tile.\n\n- When you must move, use the absolute minimum directional inputs -- one or two total across all sub-steps. Never use three or more movement inputs in a single step. Overshoot into gaps is the primary killer; a tiny step is always safer than a large one.\n\n- Stay near the center of the largest connected cluster of safe gray tiles. Once you reach a reasonable central position, stop immediately and commit to staying there indefinitely until your own tile turns red.\n\n- The first few steps are critical: red tiles will appear around the platform but most are not near you. Resist the urge to relocate -- if your current tile is gray, stay on it.\n\n- Never jump. Jumping adds unpredictability and frequently causes fatal overshoot. Accept being on a smaller island rather than risking a jump.\n\n",
+    "curve": [
+     0.147,
+     0.206,
+     0.27,
+     0.539,
+     0.721,
+     0.771,
+     0.372,
+     0.788,
+     0.401,
+     0.378,
+     0.267
+    ],
+    "vars": [
+     {
+      "var": "Var 1",
+      "vk": "v1",
+      "withoutSkill": 0.159,
+      "withSkill": 0.438,
+      "ns": true,
+      "bs": true,
+      "ns2": false,
+      "bs2": false
+     },
+     {
+      "var": "Var 2",
+      "vk": "v2",
+      "withoutSkill": 0.234,
+      "withSkill": 0.066,
+      "bsVid": 0.067,
+      "ns": true,
+      "bs": true,
+      "ns2": false,
+      "bs2": false
+     },
+     {
+      "var": "Var 3",
+      "vk": "v3",
+      "withoutSkill": 0.172,
+      "withSkill": 0.183,
+      "ns": true,
+      "bs": true,
+      "ns2": false,
+      "bs2": false
+     }
+    ]
+   },
+   {
+    "key": "opus47",
+    "name": "Claude Opus 4.7",
+    "logo": "claude",
+    "skill": "# LastStand / claude-opus-4-7\n\nBest measured origin round: R7\n\n## Tile-survival skill\n\nThe score grows monotonically each tick you remain alive, so **time alive = score**. Almost every move risks landing on a red tile or in a gap.\n\n- **Never chain forward steps.** Repeated `w ; w ; w` over multiple sub-steps is the strongest predictor of falling -- each repeat compounds blindness to what just appeared underfoot.\n- **Avoid jumps unless a gap is unavoidable.** Space/jump landings are harder to read than walks; only use when no adjacent solid tile exists.\n\n",
+    "curve": [
+     0.308,
+     0.122,
+     0.707,
+     0.122,
+     0.459,
+     0.289,
+     0.727,
+     0.928,
+     0.473,
+     0.889,
+     0.529
+    ],
+    "vars": [
+     {
+      "var": "Var 1",
+      "vk": "v1",
+      "withoutSkill": 0.213,
+      "withSkill": 0.116,
+      "bsVid": 0.117,
+      "ns": true,
+      "bs": true,
+      "ns2": false,
+      "bs2": false
+     },
+     {
+      "var": "Var 2",
+      "vk": "v2",
+      "withoutSkill": 0.349,
+      "withSkill": 0.083,
+      "ns": true,
+      "bs": true,
+      "ns2": false,
+      "bs2": false
+     },
+     {
+      "var": "Var 3",
+      "vk": "v3",
+      "withoutSkill": 0.211,
+      "withSkill": 0.167,
+      "ns": true,
+      "bs": true,
+      "ns2": false,
+      "bs2": false
+     }
+    ]
+   },
+   {
+    "key": "geminipro",
+    "name": "Gemini 3.1 Pro Preview",
+    "logo": "gemini",
+    "skill": "# LastStand / gemini-3.1-pro-preview\n\nBest measured origin round: R10\n\n- The goal is to survive as long as possible on a platform where tiles turn red and fall away.\n- If you are standing on a safe, grey tile, do not move. Output empty actions to stay in place and survive.\n- Only move when the tile you are standing on turns red.\n- When your tile turns red, you must visually identify a solid grey block to move to. Empty spaces showing the blue sky below are holes; moving into them will cause you to fall and die.\n- Look carefully at the adjacent spaces: forward, backward, left, right. Only move in a direction if you clearly see a solid grey tile there. Do not guess or move blindly.\n- Use minimal steps to reach the adjacent safe tile. Do not use long sequences of movement as you will overshoot and fall into a hole.\n\n",
+    "curve": [
+     0.23,
+     0.723,
+     0.473,
+     0.687,
+     0.838,
+     0.539,
+     0.789,
+     0.919,
+     0.752,
+     0.61,
+     0.931
+    ],
+    "vars": [
+     {
+      "var": "Var 1",
+      "vk": "v1",
+      "withoutSkill": 0.16,
+      "withSkill": 0.426,
+      "ns": true,
+      "bs": true,
+      "ns2": false,
+      "bs2": false
+     },
+     {
+      "var": "Var 2",
+      "vk": "v2",
+      "withoutSkill": 0.173,
+      "withSkill": 0.111,
+      "ns": true,
+      "bs": true,
+      "ns2": false,
+      "bs2": false
+     },
+     {
+      "var": "Var 3",
+      "vk": "v3",
+      "withoutSkill": 0.142,
+      "withSkill": 0.159,
+      "ns": true,
+      "bs": true,
+      "ns2": false,
+      "bs2": false
+     }
+    ]
+   },
+   {
+    "key": "gpt55",
+    "name": "GPT-5.5",
+    "logo": "openai",
+    "skill": "# LastStand / gpt-5.5\n\nBest measured origin round: R1\n\n# Last Stand survival memo\n\n- Your score mainly improves by staying alive, so prefer stable survival over exploring distant floor.\n- Keep the view tilted enough toward the floor to judge which tiles are intact, warning-colored, or already gone.\n- If your current tile turns warning-colored, leave promptly for the nearest connected intact tile; if warning tiles are only nearby, first verify whether standing still is still safe.\n- Favor short repositioning pulses followed by a pause to reassess, because long continuous movement across fragmented floor caused many early deaths.\n- Aim to finish each move near the center of the largest connected intact patch, not on edges, seams, narrow bridges, or corners beside voids.\n- When already centered on a safe small island, hold position until a direct warning appears rather than wandering for marginally larger space.\n- Treat narrow bridges and isolated transfers as high risk: cross only when the current area is becoming unsafe, then stop and recenter on the wider patch.\n- Avoid jumping unless there is no connected walking escape from a collapsing or isolated tile.\n\n",
+    "curve": [
+     0.416,
+     0.956,
+     0.788,
+     0.801,
+     0.921,
+     0.804,
+     0.933,
+     0.939,
+     0.916,
+     0.787,
+     0.942
+    ],
+    "vars": [
+     {
+      "var": "Var 1",
+      "vk": "v1",
+      "withoutSkill": 0.516,
+      "withSkill": 0.808,
+      "bsVid": 0.807,
+      "ns": true,
+      "bs": true,
+      "ns2": false,
+      "bs2": false
+     },
+     {
+      "var": "Var 2",
+      "vk": "v2",
+      "withoutSkill": 0.536,
+      "withSkill": 0.958,
+      "bsVid": 0.957,
+      "ns": true,
+      "bs": true,
+      "ns2": false,
+      "bs2": false
+     },
+     {
+      "var": "Var 3",
+      "vk": "v3",
+      "withoutSkill": 0.184,
+      "withSkill": 0.196,
+      "ns": true,
+      "bs": true,
+      "ns2": false,
+      "bs2": false
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "shared",
+  "name": "SharedFloor",
+  "coop": true,
+  "varDescs": {"v1": "Item and station positions and the floor texture are rearranged; the game rules are unchanged.", "v2": "Item and station positions and the floor texture are rearranged; the game rules are unchanged.", "v3": "Item and station positions and the floor texture are rearranged; the game rules are unchanged."},
+  "models": [
+   {
+    "key": "opus46",
+    "name": "Claude Opus 4.6",
+    "logo": "claude",
+    "skill": "# SharedFloor / claude-opus-4-6\n\nBest measured origin round: R8\n\n- This is a cooperative factory game. You and your teammate share the same arena with parts to pick up, a WorkBench to upgrade them, an Order Counter to submit them, and a Bin to discard unwanted items. The team score is the sum of both players' individual scores.\n\n- Divide labor immediately: at the start, one player should handle the item closest to them while the other targets a different item. If you see your teammate already moving toward or carrying an item, choose a different one.\n\n- Avoid duplication above all else. Before upgrading any item, check if your teammate is carrying or upgrading the same item type. If you cannot confirm they are doing something different, do the basic 1-point version of that order instead. Getting stranded with an unmatched High-grade item wastes 7-10 steps discarding and is the single biggest score killer.\n\n- When both a basic order and a High-grade order exist for the same item type, split them: one player does basic, one does High-grade. If you're unsure which your teammate chose, default to basic -- it's faster and risk-free.\n\n- Only upgrade when you're confident your teammate is NOT upgrading the same type AND at least 20 seconds remain. The upgrade cycle takes 8-10 steps; a failed or duplicated upgrade wastes the entire investment.\n\n- Never pick up an item that doesn't match any current order. Check the orders display before grabbing anything. A High-grade item cannot fulfill a basic order of the same type.\n\n- When submitting at the Order Counter, you must be precisely positioned for the \"Submit\" prompt to work. If pressing interact doesn't register, nudge your position in a distinctly different direction and retry -- don't spam interact from the same spot repeatedly.\n\n- After upgrading at the WorkBench, verify the label above your character says \"High-grade\" before leaving. If it still shows the basic item name, interact again.\n\n- With fewer than about 15 seconds remaining, only attempt basic 1-point orders that don't require upgrading.\n\n- After submitting an order, immediately check what new orders appeared and plan your next target before moving.\n\n",
+    "curve": [
+     0.152,
+     0.192,
+     0.168,
+     0.196,
+     0.172,
+     0.164,
+     0.18,
+     0.18,
+     0.212,
+     0.184,
+     0.188
+    ],
+    "vars": [
+     {
+      "var": "Var 1",
+      "vk": "v1",
+      "withoutSkill": 0.064,
+      "withSkill": 0.1,
+      "ns": true,
+      "bs": true,
+      "ns2": true,
+      "bs2": true
+     },
+     {
+      "var": "Var 2",
+      "vk": "v2",
+      "withoutSkill": 0.096,
+      "withSkill": 0.132,
+      "ns": true,
+      "bs": true,
+      "ns2": true,
+      "bs2": true
+     },
+     {
+      "var": "Var 3",
+      "vk": "v3",
+      "withoutSkill": 0.092,
+      "withSkill": 0.12,
+      "ns": true,
+      "bs": true,
+      "ns2": true,
+      "bs2": true
+     }
+    ]
+   },
+   {
+    "key": "opus47",
+    "name": "Claude Opus 4.7",
+    "logo": "claude",
+    "skill": "# SharedFloor / claude-opus-4-7\n\nBest measured origin round: R3\n\n## shared_floor -- coop skill\n\nThis is a 2-player coop kitchen-style game with a shared floor. The bottom HUD lists exactly two open orders at any time: one usually labeled `High-grade (2)`, the other a base item `(1)`. High-grade variants must be upgraded at the WorkBench before submission and pay double. Orders rotate the moment a successful submit lands, not on a timer. The round is hard time-limited. Stations include WorkBench, Order Counter, and a Bin for discards.\n\nUse these as heuristics; don't follow them as a script.\n\n- **Open by proximity, then commit.** At step 0, look at spawns and pick whichever order's part you are closer to; the partner takes the other. Don't reverse that assignment in the first several steps because of a guess that the partner might also be going there -- abandoning costs more steps than the conflict would. Only switch if you actually see the partner already at that spawn with a PickUp prompt or visibly carrying that item.\n- **Trust the on-screen prompt as ground truth.** A visible `PickUp` / `Upgrade` / `Submit` / `Bin` prompt authoritatively tells you both that you are in range and whether you are or aren't carrying the relevant item. The floating green name above your character is unreliable; the prompt is not.\n- **Prompt visible -> interact, don't reposition.** When an interact prompt is on screen, prioritize the interact that frame over more movement; extra movement that frame can carry you back out of range.\n- **Adjacency, not approach.** Pickup / Submit / Upgrade triggers on a specific tile, not on raw proximity. If you keep advancing toward a target and no prompt appears, you're misaligned on the perpendicular axis -- slide sideways rather than pushing further forward.\n- **Score-credit can lag a step or two behind a successful submit.** If you just pressed interact at the counter and the team_score hasn't ticked yet, do NOT mash interact more times in place -- the credit usually arrives next observation. If it still hasn't after a couple of steps, you were misaligned: slide sideways and re-approach.\n- **Re-read the order list every time the score ticks.** After any successful submit, yours OR the partner's, the orders rotate. Before committing your next move, look at the HUD orders again -- if what you're carrying or heading for no longer appears there, redirect immediately.\n- **Bin off dead weight.** If orders rotated while you were carrying and what you hold matches neither current order, dump at the Bin and re-grab -- don't tour the map with a useless item.\n- **Single re-read on carry-state flip.** If your stated inventory has flipped between consecutive frames, pause movement briefly and resolve from the prompt: `PickUp` showing means you are empty; `Upgrade` or `Submit` showing means you are carrying.\n- **Specialization beats symmetry.** One player owning the full High-grade loop, pickup -> WorkBench -> Submit, while the partner runs the base-item loop is a known high-score pattern, not a coordination failure.\n- **Diversify at the workbench.** Don't both queue the same part type at the WorkBench; while one upgrades, the other should be staging the other order's part or running a base submit.\n- **No idle near the counter.** Empty-handed after a submit, immediately pick the next part the current orders need; idle frames are pure loss.\n- **Endgame triage.** When the round timer is visibly near zero and you're holding a base item, go straight to the Order Counter -- do NOT detour to the WorkBench.\n\n",
+    "curve": [
+     0.136,
+     0.148,
+     0.188,
+     0.204,
+     0.176,
+     0.18,
+     0.144,
+     0.184,
+     0.192,
+     0.18,
+     0.156
+    ],
+    "vars": [
+     {
+      "var": "Var 1",
+      "vk": "v1",
+      "withoutSkill": 0.092,
+      "withSkill": 0.132,
+      "ns": true,
+      "bs": true,
+      "ns2": true,
+      "bs2": true
+     },
+     {
+      "var": "Var 2",
+      "vk": "v2",
+      "withoutSkill": 0.116,
+      "withSkill": 0.136,
+      "ns": true,
+      "bs": true,
+      "ns2": true,
+      "bs2": true
+     },
+     {
+      "var": "Var 3",
+      "vk": "v3",
+      "withoutSkill": 0.108,
+      "withSkill": 0.132,
+      "ns": true,
+      "bs": true,
+      "ns2": true,
+      "bs2": true
+     }
+    ]
+   },
+   {
+    "key": "geminipro",
+    "name": "Gemini 3.1 Pro Preview",
+    "logo": "gemini",
+    "skill": "# SharedFloor / gemini-3.1-pro-preview\n\nBest measured origin round: R9\n\n- **Strict Division of Labor**: Never work on the same order as your teammate. Check the \"Current orders\" list and observe your teammate's held item and movement direction. If they are moving towards a dispenser, assume they are claiming that item's order and choose a different one.\n- **Preventing the Polite Dance**: If you and your teammate accidentally target the same dispenser, the player who is physically closer should claim it. If you decide to yield, you must commit to a different order and never switch back, even if your teammate also yielded.\n- **Inferring High-Grade Intent**: \"High-grade\" orders require taking a base item to the WorkBench to upgrade it. If your teammate is carrying a base item and moving towards the WorkBench, they are claiming the High-grade order for that item.\n- **Verify Held Item Before Upgrading**: You must physically pick up a base item from its dispenser before you can upgrade it. Do not go to the WorkBench and press interact if your character is empty-handed.\n- **Discarding Obsolete Items**: You can only hold one item at a time. If you are holding an item that is no longer needed, immediately go to the Bin to discard it so you can pick up a new item.\n- **Navigating the Order Counter**: The Order Counter is a solid obstacle. If you are stuck walking into it, use perpendicular movement to navigate around it before continuing to your destination.\n- **Combine Movement and Interaction**: Do not stop completely to interact with dispensers, the WorkBench, or the Order Counter. Instead, include the interact action in the same step as your final approach movement to save time and ensure you are close enough to trigger the interaction.\n\n",
+    "curve": [
+     0.336,
+     0.28,
+     0.332,
+     0.336,
+     0.34,
+     0.328,
+     0.352,
+     0.36,
+     0.344,
+     0.412,
+     0.376
+    ],
+    "vars": [
+     {
+      "var": "Var 1",
+      "vk": "v1",
+      "withoutSkill": 0.24,
+      "withSkill": 0.28,
+      "ns": true,
+      "bs": true,
+      "ns2": true,
+      "bs2": true
+     },
+     {
+      "var": "Var 2",
+      "vk": "v2",
+      "withoutSkill": 0.272,
+      "withSkill": 0.288,
+      "ns": true,
+      "bs": true,
+      "ns2": true,
+      "bs2": true
+     },
+     {
+      "var": "Var 3",
+      "vk": "v3",
+      "withoutSkill": 0.212,
+      "withSkill": 0.232,
+      "ns": true,
+      "bs": true,
+      "ns2": true,
+      "bs2": true
+     }
+    ]
+   },
+   {
+    "key": "gpt55",
+    "name": "GPT-5.5",
+    "logo": "openai",
+    "skill": "# SharedFloor / gpt-5.5\n\nBest measured origin round: R8\n\n# Shared-floor skill\n\n- At each decision, read the active orders and choose the closest unfinished order you can complete now, not the item you were already planning around.\n- Split labor: when your teammate is clearly carrying or working an order, take a different visible order, a normal cash-in, or a nonblocking support route.\n- Start an upgrade only when you are visibly holding the matching raw item and can picture the whole workbench-to-counter return; otherwise cash a normal order.\n- At any station, use one deliberate interaction, then check for a changed held item, score, prompt, or teammate score before repeating.\n- If an interaction fails, adjust position or reassess whether you are holding the right item instead of standing still or pressing again from the same spot.\n- After your teammate scores, immediately refresh the order list and treat your carried duplicate as suspect; repurpose it nearby or drop it rather than taking a long disposal trip.\n- Once you carry a matching finished item, deliver it at the counter, clear the interaction area, then refresh orders and abandon duplicates if your teammate scores first.\n- Near the end, score only items already held near the counter or already returning from an upgrade; ignore fresh pickups unless they are essentially a submission already.\n\n",
+    "curve": [
+     0.368,
+     0.352,
+     0.372,
+     0.344,
+     0.344,
+     0.352,
+     0.356,
+     0.384,
+     0.388,
+     0.356,
+     0.376
+    ],
+    "vars": [
+     {
+      "var": "Var 1",
+      "vk": "v1",
+      "withoutSkill": 0.256,
+      "withSkill": 0.29,
+      "ns": true,
+      "bs": true,
+      "ns2": true,
+      "bs2": true
+     },
+     {
+      "var": "Var 2",
+      "vk": "v2",
+      "withoutSkill": 0.276,
+      "withSkill": 0.292,
+      "ns": true,
+      "bs": true,
+      "ns2": true,
+      "bs2": true
+     },
+     {
+      "var": "Var 3",
+      "vk": "v3",
+      "withoutSkill": 0.208,
+      "withSkill": 0.228,
+      "ns": true,
+      "bs": true,
+      "ns2": true,
+      "bs2": true
+     }
+    ]
+   }
+  ]
+ }
+]

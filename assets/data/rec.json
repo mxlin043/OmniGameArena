@@ -1,0 +1,1570 @@
+{
+ "pdq": [
+  {
+   "slug": "or2d",
+   "name": "ObstacleRun2D",
+   "regime": "Solo",
+   "models": [
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "score": 0.473,
+     "vid": 0.569
+    },
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "score": 0.338,
+     "vid": 0.341
+    },
+    {
+     "key": "geminilite",
+     "name": "Gemini 3.1 Flash-Lite Preview",
+     "logo": "gemini",
+     "score": 0.278,
+     "vid": 0.325
+    },
+    {
+     "key": "opus47",
+     "name": "Claude Opus 4.7",
+     "logo": "claude",
+     "score": 0.22,
+     "vid": 0.303
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai",
+     "score": 0.122,
+     "vid": 0.202
+    },
+    {
+     "key": "qwen397",
+     "name": "Qwen3.5-397B-A17B",
+     "logo": "qwen",
+     "score": 0.114,
+     "vid": 0.124
+    },
+    {
+     "key": "kimi",
+     "name": "Kimi K2.5",
+     "logo": "kimi",
+     "score": 0.109,
+     "vid": 0.075
+    },
+    {
+     "key": "geminipro",
+     "name": "Gemini 3.1 Pro Preview",
+     "logo": "gemini",
+     "score": 0.102,
+     "vid": 0.074
+    },
+    {
+     "key": "qwen122",
+     "name": "Qwen3.5-122B-A10B",
+     "logo": "qwen",
+     "score": 0.092,
+     "vid": 0.073
+    },
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude",
+     "score": 0.075,
+     "vid": 0.072
+    },
+    {
+     "key": "openp2p",
+     "name": "Open-P2P",
+     "logo": "p2p",
+     "score": 0.056,
+     "policy": true,
+     "vid": 0.0
+    },
+    {
+     "key": "nitrogen",
+     "name": "NitroGen",
+     "logo": "nvidia",
+     "score": 0.034,
+     "policy": true,
+     "vid": 0.0
+    }
+   ]
+  },
+  {
+   "slug": "or3d",
+   "name": "ObstacleRun3D",
+   "regime": "Solo",
+   "models": [
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude",
+     "score": 0.2,
+     "vid": 0.446
+    },
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "score": 0.172,
+     "vid": 0.339
+    },
+    {
+     "key": "geminipro",
+     "name": "Gemini 3.1 Pro Preview",
+     "logo": "gemini",
+     "score": 0.165,
+     "vid": 0.135
+    },
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "score": 0.133,
+     "vid": 0.134
+    },
+    {
+     "key": "qwen397",
+     "name": "Qwen3.5-397B-A17B",
+     "logo": "qwen",
+     "score": 0.112,
+     "vid": 0.066
+    },
+    {
+     "key": "geminilite",
+     "name": "Gemini 3.1 Flash-Lite Preview",
+     "logo": "gemini",
+     "score": 0.097,
+     "vid": 0.065
+    },
+    {
+     "key": "opus47",
+     "name": "Claude Opus 4.7",
+     "logo": "claude",
+     "score": 0.094,
+     "vid": 0.065
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai",
+     "score": 0.089,
+     "vid": 0.131
+    },
+    {
+     "key": "kimi",
+     "name": "Kimi K2.5",
+     "logo": "kimi",
+     "score": 0.075,
+     "vid": 0.13
+    },
+    {
+     "key": "nitrogen",
+     "name": "NitroGen",
+     "logo": "nvidia",
+     "score": 0.065,
+     "policy": true,
+     "vid": 0.085
+    },
+    {
+     "key": "qwen122",
+     "name": "Qwen3.5-122B-A10B",
+     "logo": "qwen",
+     "score": 0.034,
+     "vid": 0.065
+    },
+    {
+     "key": "openp2p",
+     "name": "Open-P2P",
+     "logo": "p2p",
+     "score": 0.023,
+     "policy": true,
+     "vid": 0.112
+    }
+   ]
+  },
+  {
+   "slug": "last",
+   "name": "LastStand",
+   "regime": "Solo",
+   "models": [
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "score": 0.416,
+     "vid": 0.761
+    },
+    {
+     "key": "opus47",
+     "name": "Claude Opus 4.7",
+     "logo": "claude",
+     "score": 0.308,
+     "vid": 0.55
+    },
+    {
+     "key": "kimi",
+     "name": "Kimi K2.5",
+     "logo": "kimi",
+     "score": 0.232,
+     "vid": 0.367
+    },
+    {
+     "key": "geminipro",
+     "name": "Gemini 3.1 Pro Preview",
+     "logo": "gemini",
+     "score": 0.23,
+     "vid": 0.233
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai",
+     "score": 0.148,
+     "vid": 0.267
+    },
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "score": 0.147,
+     "vid": 0.2
+    },
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude",
+     "score": 0.144,
+     "vid": 0.217
+    },
+    {
+     "key": "geminilite",
+     "name": "Gemini 3.1 Flash-Lite Preview",
+     "logo": "gemini",
+     "score": 0.122,
+     "vid": 0.172
+    },
+    {
+     "key": "qwen397",
+     "name": "Qwen3.5-397B-A17B",
+     "logo": "qwen",
+     "score": 0.106,
+     "vid": 0.128
+    },
+    {
+     "key": "nitrogen",
+     "name": "NitroGen",
+     "logo": "nvidia",
+     "score": 0.1,
+     "policy": true,
+     "vid": 0.128
+    },
+    {
+     "key": "qwen122",
+     "name": "Qwen3.5-122B-A10B",
+     "logo": "qwen",
+     "score": 0.093,
+     "vid": 0.122
+    },
+    {
+     "key": "openp2p",
+     "name": "Open-P2P",
+     "logo": "p2p",
+     "score": 0.063,
+     "policy": true,
+     "vid": 0.106
+    }
+   ]
+  },
+  {
+   "slug": "mshoot",
+   "name": "MonsterShoot",
+   "regime": "Solo",
+   "models": [
+    {
+     "key": "geminipro",
+     "name": "Gemini 3.1 Pro Preview",
+     "logo": "gemini",
+     "score": 0.71,
+     "vid": 0.9
+    },
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "score": 0.464,
+     "vid": 0.55
+    },
+    {
+     "key": "opus47",
+     "name": "Claude Opus 4.7",
+     "logo": "claude",
+     "score": 0.4,
+     "vid": 0.52
+    },
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "score": 0.362,
+     "vid": 0.45
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai",
+     "score": 0.326,
+     "vid": 0.5
+    },
+    {
+     "key": "kimi",
+     "name": "Kimi K2.5",
+     "logo": "kimi",
+     "score": 0.29,
+     "vid": 0.41
+    },
+    {
+     "key": "geminilite",
+     "name": "Gemini 3.1 Flash-Lite Preview",
+     "logo": "gemini",
+     "score": 0.182,
+     "vid": 0.29
+    },
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude",
+     "score": 0.166,
+     "vid": 0.25
+    },
+    {
+     "key": "qwen397",
+     "name": "Qwen3.5-397B-A17B",
+     "logo": "qwen",
+     "score": 0.072,
+     "vid": 0.09
+    },
+    {
+     "key": "qwen122",
+     "name": "Qwen3.5-122B-A10B",
+     "logo": "qwen",
+     "score": 0.024,
+     "vid": 0.0
+    },
+    {
+     "key": "nitrogen",
+     "name": "NitroGen",
+     "logo": "nvidia",
+     "score": 0.014,
+     "policy": true,
+     "vid": 0.02
+    },
+    {
+     "key": "openp2p",
+     "name": "Open-P2P",
+     "logo": "p2p",
+     "score": 0.0,
+     "policy": true,
+     "vid": 0.0
+    }
+   ]
+  },
+  {
+   "slug": "scene",
+   "name": "SceneEscape",
+   "regime": "Solo",
+   "models": [
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "score": 0.72,
+     "vid": 1.0
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai",
+     "score": 0.68,
+     "vid": 0.7
+    },
+    {
+     "key": "geminipro",
+     "name": "Gemini 3.1 Pro Preview",
+     "logo": "gemini",
+     "score": 0.66,
+     "vid": 0.7
+    },
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "score": 0.54,
+     "vid": 0.6
+    },
+    {
+     "key": "opus47",
+     "name": "Claude Opus 4.7",
+     "logo": "claude",
+     "score": 0.46,
+     "vid": 0.5
+    },
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude",
+     "score": 0.44,
+     "vid": 0.4
+    },
+    {
+     "key": "geminilite",
+     "name": "Gemini 3.1 Flash-Lite Preview",
+     "logo": "gemini",
+     "score": 0.3,
+     "vid": 0.5
+    },
+    {
+     "key": "kimi",
+     "name": "Kimi K2.5",
+     "logo": "kimi",
+     "score": 0.22,
+     "vid": 0.4
+    },
+    {
+     "key": "qwen397",
+     "name": "Qwen3.5-397B-A17B",
+     "logo": "qwen",
+     "score": 0.2,
+     "vid": 0.4
+    },
+    {
+     "key": "nitrogen",
+     "name": "NitroGen",
+     "logo": "nvidia",
+     "score": 0.12,
+     "policy": true,
+     "vid": 0.1
+    },
+    {
+     "key": "openp2p",
+     "name": "Open-P2P",
+     "logo": "p2p",
+     "score": 0.1,
+     "policy": true,
+     "vid": 0.2
+    },
+    {
+     "key": "qwen122",
+     "name": "Qwen3.5-122B-A10B",
+     "logo": "qwen",
+     "score": 0.06,
+     "vid": 0.0
+    }
+   ]
+  },
+  {
+   "slug": "cue",
+   "name": "CueChase",
+   "regime": "Solo",
+   "models": [
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "score": 0.84,
+     "vid": 1.0
+    },
+    {
+     "key": "geminipro",
+     "name": "Gemini 3.1 Pro Preview",
+     "logo": "gemini",
+     "score": 0.6,
+     "vid": 0.9
+    },
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "score": 0.58,
+     "vid": 0.7
+    },
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude",
+     "score": 0.44,
+     "vid": 0.6
+    },
+    {
+     "key": "geminilite",
+     "name": "Gemini 3.1 Flash-Lite Preview",
+     "logo": "gemini",
+     "score": 0.44,
+     "vid": 0.5
+    },
+    {
+     "key": "opus47",
+     "name": "Claude Opus 4.7",
+     "logo": "claude",
+     "score": 0.38,
+     "vid": 0.4
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai",
+     "score": 0.3,
+     "vid": 0.4
+    },
+    {
+     "key": "kimi",
+     "name": "Kimi K2.5",
+     "logo": "kimi",
+     "score": 0.14,
+     "vid": 0.3
+    },
+    {
+     "key": "qwen122",
+     "name": "Qwen3.5-122B-A10B",
+     "logo": "qwen",
+     "score": 0.04,
+     "vid": 0.0
+    },
+    {
+     "key": "qwen397",
+     "name": "Qwen3.5-397B-A17B",
+     "logo": "qwen",
+     "score": 0.04,
+     "vid": 0.1
+    },
+    {
+     "key": "nitrogen",
+     "name": "NitroGen",
+     "logo": "nvidia",
+     "score": 0.02,
+     "policy": true,
+     "vid": 0.1
+    },
+    {
+     "key": "openp2p",
+     "name": "Open-P2P",
+     "logo": "p2p",
+     "score": 0.0,
+     "policy": true,
+     "vid": 0.0
+    }
+   ]
+  },
+  {
+   "slug": "craft",
+   "name": "SoloCraft",
+   "regime": "Solo",
+   "models": [
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "score": 0.252,
+     "vid": 0.28
+    },
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "score": 0.228,
+     "vid": 0.26
+    },
+    {
+     "key": "opus47",
+     "name": "Claude Opus 4.7",
+     "logo": "claude",
+     "score": 0.16,
+     "vid": 0.18
+    },
+    {
+     "key": "geminipro",
+     "name": "Gemini 3.1 Pro Preview",
+     "logo": "gemini",
+     "score": 0.148,
+     "vid": 0.04
+    },
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude",
+     "score": 0.124,
+     "vid": 0.16
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai",
+     "score": 0.084,
+     "vid": 0.1
+    },
+    {
+     "key": "kimi",
+     "name": "Kimi K2.5",
+     "logo": "kimi",
+     "score": 0.064,
+     "vid": 0.1
+    },
+    {
+     "key": "geminilite",
+     "name": "Gemini 3.1 Flash-Lite Preview",
+     "logo": "gemini",
+     "score": 0.036,
+     "vid": 0.06
+    },
+    {
+     "key": "qwen122",
+     "name": "Qwen3.5-122B-A10B",
+     "logo": "qwen",
+     "score": 0.013,
+     "vid": 0.04
+    },
+    {
+     "key": "qwen397",
+     "name": "Qwen3.5-397B-A17B",
+     "logo": "qwen",
+     "score": 0.0,
+     "vid": 0.0
+    },
+    {
+     "key": "nitrogen",
+     "name": "NitroGen",
+     "logo": "nvidia",
+     "score": 0.0,
+     "policy": true,
+     "vid": 0.0
+    },
+    {
+     "key": "openp2p",
+     "name": "Open-P2P",
+     "logo": "p2p",
+     "score": 0.0,
+     "policy": true,
+     "vid": 0.0
+    }
+   ]
+  },
+  {
+   "slug": "sky",
+   "name": "SkyDuel",
+   "regime": "PvP",
+   "pvpModels": [
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "vid": 0.184
+    },
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "vid": 0.269
+    },
+    {
+     "key": "geminipro",
+     "name": "Gemini 3.1 Pro Preview",
+     "logo": "gemini",
+     "vid": 0.042
+    },
+    {
+     "key": "kimi",
+     "name": "Kimi K2.5",
+     "logo": "kimi",
+     "vid": 0.053
+    },
+    {
+     "key": "qwen397",
+     "name": "Qwen3.5-397B-A17B",
+     "logo": "qwen",
+     "vid": 0.012
+    }
+   ],
+   "pairs": [
+    {
+     "a": "opus46",
+     "b": "gpt55",
+     "sa": 0,
+     "sb": 0.8
+    },
+    {
+     "a": "opus46",
+     "b": "geminipro",
+     "sa": 0.8,
+     "sb": 0
+    },
+    {
+     "a": "opus46",
+     "b": "kimi",
+     "sa": 0.6,
+     "sb": 0
+    },
+    {
+     "a": "opus46",
+     "b": "qwen397",
+     "sa": 0.8,
+     "sb": 0
+    },
+    {
+     "a": "gpt55",
+     "b": "geminipro",
+     "sa": 1,
+     "sb": 0
+    },
+    {
+     "a": "gpt55",
+     "b": "kimi",
+     "sa": 1,
+     "sb": 0
+    },
+    {
+     "a": "gpt55",
+     "b": "qwen397",
+     "sa": 1,
+     "sb": 0
+    },
+    {
+     "a": "geminipro",
+     "b": "kimi",
+     "sa": 0.8,
+     "sb": 0.2
+    },
+    {
+     "a": "geminipro",
+     "b": "qwen397",
+     "sa": 1,
+     "sb": 0.2
+    },
+    {
+     "a": "kimi",
+     "b": "qwen397",
+     "sa": 0.6,
+     "sb": 0.2
+    }
+   ],
+   "scoreDiv": 1,
+   "matches": {
+    "geminipro_v_gpt55": [
+     0,
+     0.2
+    ],
+    "geminipro_v_kimi": [
+     0,
+     0
+    ],
+    "geminipro_v_opus46": [
+     0,
+     0.2
+    ],
+    "geminipro_v_qwen397": [
+     0.2,
+     0
+    ],
+    "gpt55_v_geminipro": [
+     0.1,
+     0
+    ],
+    "gpt55_v_kimi": [
+     0.4,
+     0
+    ],
+    "gpt55_v_opus46": [
+     0.1,
+     0
+    ],
+    "gpt55_v_qwen397": [
+     0.8,
+     0
+    ],
+    "kimi_v_geminipro": [
+     0,
+     0.4
+    ],
+    "kimi_v_gpt55": [
+     0,
+     0.9
+    ],
+    "kimi_v_opus46": [
+     0,
+     0.9
+    ],
+    "kimi_v_qwen397": [
+     0.1,
+     0
+    ],
+    "opus46_v_geminipro": [
+     0.1,
+     0
+    ],
+    "opus46_v_gpt55": [
+     0,
+     0.8
+    ],
+    "opus46_v_kimi": [
+     0.1,
+     0
+    ],
+    "opus46_v_qwen397": [
+     1,
+     0
+    ],
+    "qwen397_v_geminipro": [
+     0,
+     0.2
+    ],
+    "qwen397_v_gpt55": [
+     0,
+     1
+    ],
+    "qwen397_v_kimi": [
+     0,
+     1
+    ],
+    "qwen397_v_opus46": [
+     0,
+     1
+    ]
+   }
+  },
+  {
+   "slug": "crystal",
+   "name": "CrystalGuard",
+   "regime": "PvP",
+   "pvpModels": [
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "vid": 0.57
+    },
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "vid": 0.976
+    },
+    {
+     "key": "geminipro",
+     "name": "Gemini 3.1 Pro Preview",
+     "logo": "gemini",
+     "vid": 0.57
+    },
+    {
+     "key": "kimi",
+     "name": "Kimi K2.5",
+     "logo": "kimi",
+     "vid": 0.27
+    },
+    {
+     "key": "qwen397",
+     "name": "Qwen3.5-397B-A17B",
+     "logo": "qwen",
+     "vid": 0.25
+    }
+   ],
+   "pairs": [
+    {
+     "a": "opus46",
+     "b": "gpt55",
+     "sa": 0,
+     "sb": 1
+    },
+    {
+     "a": "opus46",
+     "b": "geminipro",
+     "sa": 0.6,
+     "sb": 0.4
+    },
+    {
+     "a": "opus46",
+     "b": "kimi",
+     "sa": 1,
+     "sb": 0
+    },
+    {
+     "a": "opus46",
+     "b": "qwen397",
+     "sa": 0.8,
+     "sb": 0.2
+    },
+    {
+     "a": "gpt55",
+     "b": "geminipro",
+     "sa": 1,
+     "sb": 0
+    },
+    {
+     "a": "gpt55",
+     "b": "kimi",
+     "sa": 1,
+     "sb": 0
+    },
+    {
+     "a": "gpt55",
+     "b": "qwen397",
+     "sa": 1,
+     "sb": 0
+    },
+    {
+     "a": "geminipro",
+     "b": "kimi",
+     "sa": 0.6,
+     "sb": 0
+    },
+    {
+     "a": "geminipro",
+     "b": "qwen397",
+     "sa": 1,
+     "sb": 0
+    },
+    {
+     "a": "kimi",
+     "b": "qwen397",
+     "sa": 0.6,
+     "sb": 0.2
+    }
+   ],
+   "scoreDiv": 1,
+   "matches": {
+    "geminipro_v_gpt55": [
+     0,
+     0.9
+    ],
+    "geminipro_v_kimi": [
+     0.7,
+     0
+    ],
+    "geminipro_v_opus46": [
+     0,
+     0.3
+    ],
+    "geminipro_v_qwen397": [
+     1,
+     0.8
+    ],
+    "gpt55_v_geminipro": [
+     1,
+     0.6
+    ],
+    "gpt55_v_kimi": [
+     1,
+     0
+    ],
+    "gpt55_v_opus46": [
+     0.5,
+     0
+    ],
+    "gpt55_v_qwen397": [
+     1,
+     0
+    ],
+    "kimi_v_geminipro": [
+     0,
+     1
+    ],
+    "kimi_v_gpt55": [
+     0,
+     0.9
+    ],
+    "kimi_v_opus46": [
+     0,
+     0.7
+    ],
+    "kimi_v_qwen397": [
+     1,
+     0.1
+    ],
+    "opus46_v_geminipro": [
+     0.3,
+     0
+    ],
+    "opus46_v_gpt55": [
+     0,
+     1
+    ],
+    "opus46_v_kimi": [
+     0.9,
+     0.7
+    ],
+    "opus46_v_qwen397": [
+     1,
+     0
+    ],
+    "qwen397_v_geminipro": [
+     0,
+     0.1
+    ],
+    "qwen397_v_gpt55": [
+     0,
+     1
+    ],
+    "qwen397_v_kimi": [
+     0.9,
+     1
+    ],
+    "qwen397_v_opus46": [
+     0,
+     0.3
+    ]
+   }
+  },
+  {
+   "slug": "midline",
+   "name": "MidlineClash",
+   "regime": "PvP",
+   "pvpModels": [
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "vid": 0.072
+    },
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "vid": 0.164
+    },
+    {
+     "key": "geminipro",
+     "name": "Gemini 3.1 Pro Preview",
+     "logo": "gemini",
+     "vid": 0.167
+    },
+    {
+     "key": "kimi",
+     "name": "Kimi K2.5",
+     "logo": "kimi",
+     "vid": 0.033
+    },
+    {
+     "key": "qwen397",
+     "name": "Qwen3.5-397B-A17B",
+     "logo": "qwen",
+     "vid": 0.001
+    }
+   ],
+   "pairs": [
+    {
+     "a": "opus46",
+     "b": "gpt55",
+     "sa": 0,
+     "sb": 1
+    },
+    {
+     "a": "opus46",
+     "b": "geminipro",
+     "sa": 0.2,
+     "sb": 1
+    },
+    {
+     "a": "opus46",
+     "b": "kimi",
+     "sa": 1,
+     "sb": 0.2
+    },
+    {
+     "a": "opus46",
+     "b": "qwen397",
+     "sa": 1,
+     "sb": 0
+    },
+    {
+     "a": "gpt55",
+     "b": "geminipro",
+     "sa": 0.6,
+     "sb": 0.6
+    },
+    {
+     "a": "gpt55",
+     "b": "kimi",
+     "sa": 1,
+     "sb": 0.2
+    },
+    {
+     "a": "gpt55",
+     "b": "qwen397",
+     "sa": 1,
+     "sb": 0
+    },
+    {
+     "a": "geminipro",
+     "b": "kimi",
+     "sa": 1,
+     "sb": 0
+    },
+    {
+     "a": "geminipro",
+     "b": "qwen397",
+     "sa": 1,
+     "sb": 0
+    },
+    {
+     "a": "kimi",
+     "b": "qwen397",
+     "sa": 1,
+     "sb": 0.4
+    }
+   ],
+   "scoreDiv": 50,
+   "matches": {
+    "geminipro_v_gpt55": [
+     8,
+     4
+    ],
+    "geminipro_v_kimi": [
+     5,
+     0
+    ],
+    "geminipro_v_opus46": [
+     8,
+     1
+    ],
+    "geminipro_v_qwen397": [
+     8,
+     0
+    ],
+    "gpt55_v_geminipro": [
+     10,
+     8
+    ],
+    "gpt55_v_kimi": [
+     5,
+     2
+    ],
+    "gpt55_v_opus46": [
+     7,
+     2
+    ],
+    "gpt55_v_qwen397": [
+     8,
+     0
+    ],
+    "kimi_v_geminipro": [
+     4,
+     7
+    ],
+    "kimi_v_gpt55": [
+     2,
+     6
+    ],
+    "kimi_v_opus46": [
+     2,
+     5
+    ],
+    "kimi_v_qwen397": [
+     1,
+     0
+    ],
+    "opus46_v_geminipro": [
+     4,
+     9
+    ],
+    "opus46_v_gpt55": [
+     6,
+     11
+    ],
+    "opus46_v_kimi": [
+     5,
+     3
+    ],
+    "opus46_v_qwen397": [
+     5,
+     0
+    ],
+    "qwen397_v_geminipro": [
+     1,
+     7
+    ],
+    "qwen397_v_gpt55": [
+     0,
+     9
+    ],
+    "qwen397_v_kimi": [
+     0,
+     2
+    ],
+    "qwen397_v_opus46": [
+     0,
+     3
+    ]
+   }
+  },
+  {
+   "slug": "shared",
+   "name": "SharedFloor",
+   "regime": "Coop",
+   "coop": true,
+   "models": [
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "p2": true,
+     "score": 0.368,
+     "vid": 0.36
+    },
+    {
+     "key": "geminipro",
+     "name": "Gemini 3.1 Pro Preview",
+     "logo": "gemini",
+     "p2": true,
+     "score": 0.336,
+     "vid": 0.36
+    },
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "p2": true,
+     "score": 0.152,
+     "vid": 0.16
+    },
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude",
+     "p2": true,
+     "score": 0.148,
+     "vid": 0.18
+    },
+    {
+     "key": "opus47",
+     "name": "Claude Opus 4.7",
+     "logo": "claude",
+     "p2": true,
+     "score": 0.136,
+     "vid": 0.12
+    },
+    {
+     "key": "kimi",
+     "name": "Kimi K2.5",
+     "logo": "kimi",
+     "p2": true,
+     "score": 0.072,
+     "vid": 0.08
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai",
+     "p2": true,
+     "score": 0.068,
+     "vid": 0.06
+    },
+    {
+     "key": "geminilite",
+     "name": "Gemini 3.1 Flash-Lite Preview",
+     "logo": "gemini",
+     "p2": true,
+     "score": 0.052,
+     "vid": 0.06
+    },
+    {
+     "key": "qwen122",
+     "name": "Qwen3.5-122B-A10B",
+     "logo": "qwen",
+     "p2": true,
+     "score": 0.008,
+     "vid": 0
+    }
+   ]
+  },
+  {
+   "slug": "handoff",
+   "name": "HandoffRun",
+   "regime": "Coop",
+   "coop": true,
+   "models": [
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "p2": true,
+     "score": 0.184,
+     "vid": 0.18
+    },
+    {
+     "key": "geminipro",
+     "name": "Gemini 3.1 Pro Preview",
+     "logo": "gemini",
+     "p2": true,
+     "score": 0.136,
+     "vid": 0.16
+    },
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "p2": true,
+     "score": 0.064,
+     "vid": 0.06
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai",
+     "p2": true,
+     "score": 0.06,
+     "vid": 0.06
+    },
+    {
+     "key": "opus47",
+     "name": "Claude Opus 4.7",
+     "logo": "claude",
+     "p2": true,
+     "score": 0.04,
+     "vid": 0.02
+    },
+    {
+     "key": "geminilite",
+     "name": "Gemini 3.1 Flash-Lite Preview",
+     "logo": "gemini",
+     "p2": true,
+     "score": 0.02,
+     "vid": 0.04
+    },
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude",
+     "p2": true,
+     "score": 0.008,
+     "vid": 0
+    },
+    {
+     "key": "kimi",
+     "name": "Kimi K2.5",
+     "logo": "kimi",
+     "p2": true,
+     "score": 0.008,
+     "vid": 0
+    },
+    {
+     "key": "qwen122",
+     "name": "Qwen3.5-122B-A10B",
+     "logo": "qwen",
+     "p2": true,
+     "score": 0,
+     "vid": 0
+    }
+   ]
+  }
+ ],
+ "lcrt": [
+  {
+   "slug": "last",
+   "name": "LastStand",
+   "regime": "Solo",
+   "models": [
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "score": 0.324
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai",
+     "score": 0.253
+    },
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "score": 0.248
+    },
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude",
+     "score": 0.154
+    }
+   ]
+  },
+  {
+   "slug": "mshoot",
+   "name": "MonsterShoot",
+   "regime": "Solo",
+   "models": [
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "score": 0.18
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai",
+     "score": 0.138
+    },
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude",
+     "score": 0.116
+    },
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "score": 0.056
+    }
+   ]
+  },
+  {
+   "slug": "craft",
+   "name": "SoloCraft",
+   "regime": "Solo",
+   "models": [
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "score": 0.08
+    },
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude",
+     "score": 0.072
+    },
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "score": 0.052
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai",
+     "score": 0.04
+    }
+   ]
+  },
+  {
+   "slug": "midline",
+   "name": "MidlineClash",
+   "regime": "PvP",
+   "pvpModels": [
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude"
+    },
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude"
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai"
+    },
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai"
+    }
+   ],
+   "scoreDiv": 50,
+   "matches": {
+    "gpt54_v_gpt55": [
+     1,
+     2
+    ],
+    "gpt54_v_opus46": [
+     0,
+     1
+    ],
+    "gpt54_v_sonnet46": [
+     0,
+     0
+    ],
+    "gpt55_v_gpt54": [
+     2,
+     0
+    ],
+    "gpt55_v_opus46": [
+     0,
+     2
+    ],
+    "gpt55_v_sonnet46": [
+     2,
+     1
+    ],
+    "opus46_v_gpt54": [
+     0,
+     3
+    ],
+    "opus46_v_gpt55": [
+     1,
+     2
+    ],
+    "opus46_v_sonnet46": [
+     3,
+     0
+    ],
+    "sonnet46_v_gpt54": [
+     3,
+     0
+    ],
+    "sonnet46_v_gpt55": [
+     0,
+     2
+    ],
+    "sonnet46_v_opus46": [
+     1,
+     2
+    ]
+   }
+  },
+  {
+   "slug": "shared",
+   "name": "SharedFloor",
+   "regime": "Coop",
+   "coop": true,
+   "models": [
+    {
+     "key": "opus46",
+     "name": "Claude Opus 4.6",
+     "logo": "claude",
+     "p2": true,
+     "score": 0.048
+    },
+    {
+     "key": "gpt55",
+     "name": "GPT-5.5",
+     "logo": "openai",
+     "p2": true,
+     "score": 0.048
+    },
+    {
+     "key": "sonnet46",
+     "name": "Claude Sonnet 4.6",
+     "logo": "claude",
+     "p2": true,
+     "score": 0.028
+    },
+    {
+     "key": "gpt54",
+     "name": "GPT-5.4",
+     "logo": "openai",
+     "p2": true,
+     "score": 0.024
+    }
+   ]
+  }
+ ]
+}

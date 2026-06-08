@@ -1,0 +1,252 @@
+{
+ "pdq": {
+  "solo": [
+   {
+    "name": "GPT-5.5",
+    "logo": "openai",
+    "cls": "closed",
+    "score": 0.434
+   },
+   {
+    "name": "Claude Opus 4.6",
+    "logo": "claude",
+    "cls": "closed",
+    "score": 0.375
+   },
+   {
+    "name": "Gemini 3.1 Pro Preview",
+    "logo": "gemini",
+    "cls": "closed",
+    "score": 0.374
+   },
+   {
+    "name": "Claude Opus 4.7",
+    "logo": "claude",
+    "cls": "closed",
+    "score": 0.289
+   },
+   {
+    "name": "GPT-5.4",
+    "logo": "openai",
+    "cls": "closed",
+    "score": 0.25
+   },
+   {
+    "name": "Claude Sonnet 4.6",
+    "logo": "claude",
+    "cls": "closed",
+    "score": 0.227
+   },
+   {
+    "name": "Gemini 3.1 Flash-Lite Preview",
+    "logo": "gemini",
+    "cls": "closed",
+    "score": 0.208
+   },
+   {
+    "name": "Kimi K2.5",
+    "logo": "kimi",
+    "cls": "open",
+    "score": 0.161
+   },
+   {
+    "name": "Qwen3.5-397B-A17B",
+    "logo": "qwen",
+    "cls": "open",
+    "score": 0.092
+   },
+   {
+    "name": "Qwen3.5-122B-A10B",
+    "logo": "qwen",
+    "cls": "open",
+    "score": 0.051
+   },
+   {
+    "name": "NitroGen",
+    "logo": "nvidia",
+    "cls": "policy",
+    "score": 0.05
+   },
+   {
+    "name": "Open-P2P",
+    "logo": "p2p",
+    "cls": "policy",
+    "score": 0.035
+   }
+  ],
+  "pvp": [
+   {
+    "name": "GPT-5.5",
+    "logo": "openai",
+    "cls": "closed",
+    "score": 0.481
+   },
+   {
+    "name": "Claude Opus 4.6",
+    "logo": "claude",
+    "cls": "closed",
+    "score": 0.264
+   },
+   {
+    "name": "Gemini 3.1 Pro Preview",
+    "logo": "gemini",
+    "cls": "closed",
+    "score": 0.232
+   },
+   {
+    "name": "Kimi K2.5",
+    "logo": "kimi",
+    "cls": "open",
+    "score": 0.099
+   },
+   {
+    "name": "Qwen3.5-397B-A17B",
+    "logo": "qwen",
+    "cls": "open",
+    "score": 0.068
+   }
+  ],
+  "coop": [
+   {
+    "name": "GPT-5.5",
+    "logo": "openai",
+    "cls": "closed",
+    "score": 0.276
+   },
+   {
+    "name": "Gemini 3.1 Pro Preview",
+    "logo": "gemini",
+    "cls": "closed",
+    "score": 0.236
+   },
+   {
+    "name": "Claude Opus 4.6",
+    "logo": "claude",
+    "cls": "closed",
+    "score": 0.108
+   },
+   {
+    "name": "Claude Opus 4.7",
+    "logo": "claude",
+    "cls": "closed",
+    "score": 0.088
+   },
+   {
+    "name": "Claude Sonnet 4.6",
+    "logo": "claude",
+    "cls": "closed",
+    "score": 0.078
+   },
+   {
+    "name": "GPT-5.4",
+    "logo": "openai",
+    "cls": "closed",
+    "score": 0.064
+   },
+   {
+    "name": "Kimi K2.5",
+    "logo": "kimi",
+    "cls": "open",
+    "score": 0.04
+   },
+   {
+    "name": "Gemini 3.1 Flash-Lite Preview",
+    "logo": "gemini",
+    "cls": "closed",
+    "score": 0.036
+   },
+   {
+    "name": "Qwen3.5-122B-A10B",
+    "logo": "qwen",
+    "cls": "open",
+    "score": 0.004
+   },
+   {
+    "name": "Qwen3.5-397B-A17B",
+    "logo": "qwen",
+    "cls": "open",
+    "score": 0.0
+   }
+  ]
+ },
+ "lcrt": {
+  "solo": [
+   {
+    "name": "Claude Opus 4.6",
+    "logo": "claude",
+    "cls": "closed",
+    "score": 0.169
+   },
+   {
+    "name": "GPT-5.5",
+    "logo": "openai",
+    "cls": "closed",
+    "score": 0.144
+   },
+   {
+    "name": "GPT-5.4",
+    "logo": "openai",
+    "cls": "closed",
+    "score": 0.144
+   },
+   {
+    "name": "Claude Sonnet 4.6",
+    "logo": "claude",
+    "cls": "closed",
+    "score": 0.114
+   }
+  ],
+  "pvp": [
+   {
+    "name": "GPT-5.5",
+    "logo": "openai",
+    "cls": "closed",
+    "score": 0.025
+   },
+   {
+    "name": "Claude Opus 4.6",
+    "logo": "claude",
+    "cls": "closed",
+    "score": 0.022
+   },
+   {
+    "name": "GPT-5.4",
+    "logo": "openai",
+    "cls": "closed",
+    "score": 0.015
+   },
+   {
+    "name": "Claude Sonnet 4.6",
+    "logo": "claude",
+    "cls": "closed",
+    "score": 0.013
+   }
+  ],
+  "coop": [
+   {
+    "name": "Claude Opus 4.6",
+    "logo": "claude",
+    "cls": "closed",
+    "score": 0.048
+   },
+   {
+    "name": "GPT-5.5",
+    "logo": "openai",
+    "cls": "closed",
+    "score": 0.048
+   },
+   {
+    "name": "Claude Sonnet 4.6",
+    "logo": "claude",
+    "cls": "closed",
+    "score": 0.028
+   },
+   {
+    "name": "GPT-5.4",
+    "logo": "openai",
+    "cls": "closed",
+    "score": 0.024
+   }
+  ]
+ }
+}
