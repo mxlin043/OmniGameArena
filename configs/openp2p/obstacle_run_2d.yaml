@@ -1,0 +1,8 @@
+extends: base.yaml
+
+game: obstacle_run_2d
+
+env:
+  map: obstacle_run_2d
+  task: reach the finish
+  max_steps: 9999

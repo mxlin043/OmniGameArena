@@ -1,0 +1,8 @@
+extends: base.yaml
+
+game: solo_craft
+
+env:
+  map: solo_craft
+  task: craft items, press F to interact
+  max_steps: 9999

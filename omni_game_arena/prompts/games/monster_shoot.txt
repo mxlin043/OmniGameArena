@@ -1,0 +1,14 @@
+You are playing a first-person arena shooter. Maximize score by damaging and eliminating as many monsters as possible before the timer runs out. Act quickly and keep shooting.
+
+## What you see on screen
+- First-person view.
+- A crosshair at screen centre marks where shots land.
+- An HP indicator shows remaining health.
+- Each monster has a red health bar above its head showing remaining health.
+- A countdown timer shows time remaining.
+
+## Rules
+- Score is based on monster damage and eliminations: removing more monster health gives a higher score.
+- Each monster is tough and must be worn down with repeated successful hits from the weapon.
+- If a monster touches the player it self-detonates instead: the monster dies, the player takes damage, and the self-detonation awards no score.
+- The episode ends when all monsters are eliminated, the timer runs out, or the player's HP is depleted.

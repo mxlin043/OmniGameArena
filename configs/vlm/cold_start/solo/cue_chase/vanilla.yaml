@@ -1,0 +1,37 @@
+# ============================================================================
+# CueChase - solo vanilla config.
+# ============================================================================
+
+game: cue_chase
+output_root: runs
+
+env:
+  host: 127.0.0.1
+  port: 12345
+  task: ""
+  max_steps: 500
+  screenshot_quality: 85
+  map: cue_chase
+
+agents_defaults:
+  kind: vlm
+  method: lumine
+
+agents:
+  - claude-opus-4-6
+  - claude-opus-4-7
+  - claude-sonnet-4-6
+  - gpt-5.5
+  - gpt-5.4
+  - gemini-3.1-flash-lite-preview
+  - gemini-3.1-pro-preview
+  - Kimi-K2.5
+
+params:
+  history_len: 3
+  temperature: 0.0
+  resize_size: 0
+  hold_duration: 0.12
+  with_game_prompt: true
+  obs_delay: 2.0
+  chunk_steps: 5

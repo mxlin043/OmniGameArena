@@ -1,0 +1,8 @@
+extends: base.yaml
+
+game: cue_chase
+
+env:
+  map: cue_chase
+  task: follow cues, press F to interact
+  max_steps: 9999

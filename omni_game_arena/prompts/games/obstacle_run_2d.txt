@@ -1,0 +1,10 @@
+You are playing a 2D side-view obstacle course. You control a humanoid character running across floating platforms separated by gaps. The goal is to reach the finish line.
+
+## What you see on screen
+- The camera shows the course from the side.
+- Solid surfaces are platforms; gaps below are dangerous.
+- A 3-minute countdown timer is shown on screen.
+
+## Rules
+- Move right across the platforms and jump over gaps.
+- Reach the finish before the countdown ends; falling into a gap fails the episode.

@@ -1,0 +1,42 @@
+# ============================================================================
+# MidlineClash - two-player PvP vanilla config.
+# ============================================================================
+
+game: midline_clash
+episodes_per_cell: 1
+
+env:
+  # Shared episode settings. Player-specific host/port live under players.
+  host: 127.0.0.1
+  port: 12345
+  task: ""
+  max_steps: 120
+  screenshot_quality: 85
+
+  # Opened once by the two-player runner through player 0's port before both
+  # player loops start. Use --no-map to keep the currently loaded UE5 scene.
+  map: midline_clash
+
+players_defaults:
+  kind: vlm
+  method: lumine
+
+players:
+  - id: 0
+    host: 127.0.0.1
+    port: 12345
+    model: gpt-5.5
+
+  - id: 1
+    host: 127.0.0.1
+    port: 12346
+    model: claude-opus-4-7
+
+params:
+  history_len: 3
+  temperature: 0.0
+  resize_size: 0
+  hold_duration: 0.12
+  with_game_prompt: true
+  obs_delay: 2.0
+  chunk_steps: 6

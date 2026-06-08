@@ -1,0 +1,7 @@
+extends: variant_pdq.yaml
+
+output_root: runs/pdq_variant/shared_floor/var1
+output_root_is_final: true
+
+env:
+  map: shared_floor_var1

@@ -1,0 +1,11 @@
+# OmniGameArena runtime dependencies
+#
+#   pip install -r requirements.txt
+
+PyYAML>=6.0            # YAML benchmark configs (configs/*.yaml)
+requests>=2.31         # HTTP calls (UE5 client / model API)
+openai>=1.100          # VLM API client (OpenAI-compatible unified endpoint)
+Pillow>=10.0           # screenshot/frame handling + video text panel
+imageio-ffmpeg>=0.5    # MP4 episode video recording (omni_game_arena/eval/video_recorder.py)
+matplotlib>=3.7        # plots (e.g. IDC curves)
+pygame>=2.5            # optional: gamepad input for scripts/manual_control.py --input gamepad

@@ -1,0 +1,9 @@
+# SharedFloor held-out variant PDQ baseline.
+#
+# Shared no-skill config for var1/var2/var3. Per-variant YAMLs only
+# override env.map and output_root.
+
+extends: vanilla_pdq.yaml
+
+output_root: runs/pdq_variant
+

@@ -1,0 +1,8 @@
+extends: base.yaml
+
+game: scene_escape
+
+env:
+  map: scene_escape
+  task: escape, press F to interact
+  max_steps: 9999

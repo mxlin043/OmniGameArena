@@ -1,0 +1,15 @@
+You are playing an object interaction task-chain game. You control a character in an indoor environment with interactable objects. The objective is to complete the task chain within the countdown.
+
+## What you see on screen
+- Character camera view.
+- Top-left: status text.
+  - "Finished Tasks" shows task-chain progress.
+  - "Current Task" shows the active task text.
+- Top-right: countdown timer.
+- Interactable objects are placed in the environment.
+
+## Rules
+- The current on-screen task determines the active object.
+- Completing a valid object interaction advances the chain.
+- Object interaction is available while the yellow [Interact] prompt is visible near an object. The prompt disappears outside interaction range.
+- The episode ends when the task chain is completed or the countdown ends.

@@ -1,0 +1,50 @@
+# LastStand - Improvement Dynamics Curve (IDC) config.
+
+game: last_stand
+model: claude-opus-4-6
+
+agent:
+  kind: vlm
+  method: lumine
+  extra: {}
+
+env:
+  host: 127.0.0.1
+  port: 12345
+  task: ""
+  max_steps: 300
+  screenshot_quality: 85
+  map: last_stand
+  obs_delay: 2.0          # match the PDQ baseline (od2) so round 0 is comparable
+
+params:
+  history_len: 3
+  history_reasoning_len: 0
+  temperature: 0.0
+  resize_size: 0
+  hold_duration: 0.12
+  with_game_prompt: true
+  with_reasoning: true
+  obs_delay: 2.0
+  chunk_steps: 6
+
+idc:
+  rounds: 10
+  episodes_per_round: 5
+  official_pdq_root: runs/pdq      # source root for round_00 PDQ baseline traces
+  output_root: runs/idc
+  reflector_model: ""              # empty = reuse player model
+  reflector_temperature: 0.0
+  reflector_resize_size: 512
+  max_reflection_iterations: 100   # cap on tool-use turns per round (agentic)
+  validator_model: ""              # empty = reuse reflector model
+  validator_temperature: 0.0
+  max_validate_skill_calls: 5
+  success_threshold: 0.999
+  copy_full_episode: false    
+
+output:
+  run_dir: ""
+  live: false
+  log_vlm: false
+  api_debug: false

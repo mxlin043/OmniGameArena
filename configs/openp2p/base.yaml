@@ -1,0 +1,32 @@
+# Shared OpenP2P benchmark settings.
+#
+# Each game config extends this file, so the OpenP2P server URL and UE5 host
+# live in one place while runs remain one-game-at-a-time.
+
+output_root: runs/openp2p
+episodes_per_cell: 5
+clock_mode: realtime
+
+live: true
+log: true
+record_video: false
+video_with_thinking: false
+video_thinking_layout: side
+video_fps: 30
+flat_output: true
+
+env:
+  host: 127.0.0.1
+  port: 12345
+  screenshot_quality: 85
+  map_wait: 3.0
+  obs_delay: 0.0
+
+agents_defaults:
+  kind: openp2p
+  method: policy
+  # Endpoint defaults are loaded from configs/router.yaml.
+  extra: {}
+
+agents:
+  - model: openp2p

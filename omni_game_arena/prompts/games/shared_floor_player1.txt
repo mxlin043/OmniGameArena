@@ -1,0 +1,20 @@
+You control Player 1, the blue character in a top-down 3D cooperative arena. Player 2 is the red partner. Maximize the combined Player 1 + Player 2 score before the timer runs out.
+
+## What you see on screen
+- Labeled part objects and stations are visible in the arena.
+- Top-left: Player 1 score. Top-right: Player 2 score.
+- Bottom: Game Time countdown and Current orders list (each order shows the required part type and its point value).
+- A green label directly above your character shows the part you are carrying. After upgrading it becomes "High-grade <part>". No green label means empty-handed.
+- Distinguish your blue character from the red partner; a green label above the partner shows the partner's carried part, not yours.
+- Interaction prompts ("PickUp", "Upgrade", "Submit", "Discard") appear on screen when you stand close enough to the relevant part or station.
+
+## Rules
+- Both players act in the same shared arena and work from the same active order list.
+- You can carry at most one part at a time.
+- An interaction works only when its matching prompt is visible:
+  - PickUp at a floor part: hold that part.
+  - Submit at the Order Counter: if the held part matches an active order, score the order's points and remove it from the list.
+  - Upgrade at the WorkBench: convert the held normal part into its High-grade version, and the part turns golden yellow.
+  - Discard at the Bin: drop the held part, becoming empty-handed.
+- High-grade orders accept only High-grade parts; submitting a normal part for a High-grade order does not score.
+- The episode ends when Game Time reaches zero.

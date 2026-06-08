@@ -1,0 +1,28 @@
+# Central UE map registry for benchmark configs.
+#
+# Benchmark YAMLs should set env.map to one of these keys. The loader resolves
+# the key to the UE package path before opening the map.
+
+maps:
+  cue_chase: /Game/SceneEscape/Maps/Demo_Day
+  scene_escape: /Game/Content/ThirdPerson/Maps/CueChase
+  solo_craft: /game/cookhouse/map/cookhouse_single
+  last_stand: /game/maps/LastStand
+  monster_shoot: /Game/ShootMonster/MonsterShoot
+  obstacle_run_2d: /game/maps/ObstacleRun2D
+  obstacle_run_3d: /Game/Maps/ObstacleRun3D
+
+  shared_floor: /Game/CookHouse/Map/CookHouse_Coop
+  handoff_run: /Game/CookHouse/Map/CookHouse_AsyCoop
+
+  sky_duel: /Game/FightGame/Maps/FightMap
+  crystal_guard: /Game/BaseAssault/Map/BaseAssault_VS
+  midline_clash: /Game/CookHouse/Map/CookHouse_VS
+
+  last_stand_var1: /Game/Maps/LastStandvar1
+  last_stand_var2: /Game/Maps/LastStandvar2
+  last_stand_var3: /Game/Maps/LastStandvar3
+
+  shared_floor_var1: /Game/CookHouse/Map/cookhouse_coopvar1
+  shared_floor_var2: /Game/CookHouse/Map/cookhouse_coopvar2
+  shared_floor_var3: /Game/CookHouse/Map/cookhouse_coopvar3

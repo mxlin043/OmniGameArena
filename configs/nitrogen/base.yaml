@@ -1,0 +1,36 @@
+# Shared NitroGen benchmark settings.
+#
+# NitroGen here uses the current stateless single-image API:
+#   GET  /health
+#   POST /predict with multipart/form-data field "image"
+#
+# The server is intentionally not reset between episodes; each prediction only
+# sees the current image.
+
+output_root: runs/nitrogen
+episodes_per_cell: 5
+clock_mode: realtime
+
+live: true
+log: true
+record_video: false
+video_with_thinking: false
+video_thinking_layout: side
+video_fps: 30
+flat_output: true
+
+env:
+  host: 127.0.0.1
+  port: 12345
+  screenshot_quality: 85
+  map_wait: 3.0
+  obs_delay: 0.0
+
+agents_defaults:
+  kind: nitrogen
+  method: policy
+  # Endpoint defaults are loaded from configs/router.yaml.
+  extra: {}
+
+agents:
+  - model: nitrogen

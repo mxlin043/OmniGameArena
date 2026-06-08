@@ -1,0 +1,62 @@
+# Central endpoint router for OmniGameArena benchmark configs.
+#
+# Values here are merged into agent.extra before an agent is built.
+# Explicit extra values inside a game YAML still override this file.
+#
+# Commercial backend URLs and keys are read directly from commercial.* below.
+
+policy:
+  openp2p:
+    url: <openp2p server ip>:<port>
+    timeout: 180.0
+    health_timeout: 5.0
+    skip_reset: true
+    image_format: JPEG
+    image_quality: 85
+
+  nitrogen:
+    url: <nitrogen server ip>:<port>
+    timeout: 180.0
+    health_timeout: 5.0
+    image_format: JPEG
+    image_quality: 85
+    fps: 30
+    action_repeat: 1
+    stick_scale: 80.0
+    axis_deadzone: 0.001
+    invert_y: true
+
+vlm:
+  models:
+    qwen3.5-397b-a17b:
+      aliases:
+        - qwen3_5_397b_a17b
+        - Qwen3.5-397B-A17B
+      engine: sglang
+      base_url: http://<qwen35_397b ip>:<port>/v1
+      request_model: qwen3.5-397b-a17b
+      max_tokens: 512
+      enable_thinking: false
+      request_timeout: 240.0
+
+    qwen3.5-122b-a10b:
+      aliases:
+        - qwen3_5_122b_a10b
+        - Qwen3.5-122B-A10B
+      engine: sglang
+      base_url: http://<qwen35_122b ip>:<port>/v1
+      request_model: qwen3.5-122b-a10b
+      max_tokens: 512
+      enable_thinking: false
+      request_timeout: 240.0
+
+commercial:
+  # OpenAI-compatible commercial route: GPT, Gemini, Kimi, Hunyuan, etc.
+  openai:
+    base_url: <openai-compatible base url>
+    api_key: <your api key>
+
+  # Anthropic Messages route: Claude family.
+  anthropic:
+    base_url: <anthropic base url>
+    api_key: <your api key>

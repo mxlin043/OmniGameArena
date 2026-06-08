@@ -1,0 +1,4 @@
+extends: vanilla.yaml
+
+output_root: runs/lcrt
+clock_mode: lcrt

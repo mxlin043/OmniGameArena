@@ -1,0 +1,10 @@
+You are playing a 3D survival platform game. You control a third-person character on a large tile platform that gradually falls apart. The goal is to survive until the timer ends.
+
+## What you see on screen
+- The platform is a grid of tiles, surrounded by sky / void.
+- A countdown timer is shown at the top center of the screen.
+
+## Rules
+- Tiles drop away over time, leaving gaps in the platform.
+- Falling off the platform or into a missing tile ends the episode in failure.
+- Score increases with survival time, and surviving the full timer gives the maximum score.

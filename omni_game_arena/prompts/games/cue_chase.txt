@@ -1,0 +1,17 @@
+You are playing an NPC exchange task-chain game. You control a character in an open environment with NPCs. The objective is to complete the exchange chain within the countdown.
+
+## What you see on screen
+- Character camera view.
+- Top-left: status text.
+  - "Task Finished" shows task-chain progress.
+  - "Current Inventory" shows the held item.
+  - "NPC Hint" shows an appearance or location cue.
+  - "Task Tips" shows exchange requirement and reward text.
+- Top-centre: countdown timer.
+- NPCs have red floating name labels.
+
+## Rules
+- The current on-screen task determines the active exchange.
+- Completing a valid exchange advances the chain.
+- NPC interaction is available while the [Interaction] prompt is visible near an NPC. The prompt disappears outside interaction range.
+- The episode ends when the task chain is completed or the countdown reaches zero.

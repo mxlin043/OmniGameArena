@@ -1,0 +1,10 @@
+extends: vanilla.yaml
+
+output_root: runs/lcrt
+clock_mode: lcrt
+
+agents:
+  - gpt-5.5
+  - gpt-5.4
+  - claude-opus-4-6
+  - claude-sonnet-4-6

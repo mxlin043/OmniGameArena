@@ -1,0 +1,8 @@
+extends: base.yaml
+
+game: monster_shoot
+
+env:
+  map: monster_shoot
+  task: shoot monsters and survive
+  max_steps: 9999
