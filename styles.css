@@ -134,6 +134,18 @@ section:first-of-type { border-top: 0; }
 .btn.soon { background: #eef0f3; color: var(--faint); border-color: var(--line); cursor: default; }
 .btn.soon:hover { transform: none; box-shadow: none; }
 
+/* split-badge buttons: [icon + source] [descriptor], two-tone like shields */
+.btn.split { padding: 0; gap: 0; overflow: hidden; background: none; border: none; color: #fff; align-items: stretch; }
+.btn.split > span { display: inline-flex; align-items: center; gap: 7px; padding: 9px 15px; font-weight: 800; font-size: 0.9rem; line-height: 1; }
+.btn.split .b-key { background: #3b4048; }
+.btn.split:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(16,24,40,0.18); }
+.btn.split:hover .b-key { background: #2a2e34; }
+.v-arxiv  { background: #b31b1b; }
+.v-github { background: #6e5494; }
+.v-hf     { background: #ff9d00; color: #16181d; }
+.v-ms     { background: #2f6cad; }
+.v-demo   { background: #2e9e5b; }
+
 /* teaser figure under hero (full wrap width, same as the radar figure) */
 .teaser { max-width: var(--wide); margin: 46px auto 0; }
 
