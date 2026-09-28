@@ -4,14 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>OmniGameArena: A Unified UE5 Benchmark for VLM Game Agents with Improvement Dynamics</title>
-    <meta name="description" content="OmniGameArena is a real-time benchmark of twelve newly built Unreal Engine 5 games spanning Solo, PvP, and Coop, paired with the Improvement Dynamics Curve (IDC), an agentic-reflection harness for VLM game agents.">
+    <meta name="description" content="OmniGameArena is a single Unreal Engine 5 build of twelve games played from the rendered frame. A model is measured at three levels: a cold-start score, an Improvement Dynamics Curve (IDC) of its score after every round of reflection, and a transfer test on variants of each game.">
 
     <!-- Open Graph / Twitter -->
     <meta property="og:type" content="website">
     <meta property="og:title" content="OmniGameArena: A Unified UE5 Benchmark for VLM Game Agents with Improvement Dynamics">
-    <meta property="og:description" content="Twelve newly built UE5 games across Solo, PvP, and Coop, with the Improvement Dynamics Curve (IDC) agentic-reflection harness.">
-    <meta property="og:image" content="https://mxlin043.github.io/OmniGameArena/assets/paper/teaser.png?v=21">
-    <meta property="og:url" content="https://mxlin043.github.io/OmniGameArena/">
+    <meta property="og:description" content="Twelve games in a single Unreal Engine 5 build, measured at three levels: a cold-start score, an Improvement Dynamics Curve (IDC) and a transfer test.">
     <meta name="twitter:card" content="summary_large_image">
 
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2316181d'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='38' font-weight='700' text-anchor='middle' fill='white'%3EO%3C/text%3E%3C/svg%3E">
@@ -19,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=75">
+    <link rel="stylesheet" href="webpage/styles.css?v=104">
   </head>
   <body>
     <a class="skip-link" href="#abstract">Skip to content</a>
@@ -57,7 +55,6 @@
         </p>
 
         <nav class="links" aria-label="Resources">
-          <!-- Paper button → arXiv abstract -->
           <a class="btn split" href="https://arxiv.org/abs/2606.09826" target="_blank" rel="noopener">
             <span class="b-key"><svg viewBox="0 0 24 24" fill="#e8453a" style="width:20px;height:20px" aria-hidden="true"><path d="M3.8423 0a1.0037 1.0037 0 0 0-.922.6078c-.1536.3687-.0438.6275.2938 1.1113l6.9185 8.3597-1.0223 1.1058a1.0393 1.0393 0 0 0 .003 1.4229l1.2292 1.3135-5.4391 6.4444c-.2803.299-.4538.823-.2971 1.1986a1.0253 1.0253 0 0 0 .9585.635.9133.9133 0 0 0 .6891-.3405l5.783-6.126 7.4902 8.0051a.8527.8527 0 0 0 .6835.2597.9575.9575 0 0 0 .8777-.6138c.1577-.377-.017-.7502-.306-1.1407l-7.0518-8.3418 1.0632-1.13a.9626.9626 0 0 0 .0089-1.3165L4.6336.4639s-.3733-.4535-.768-.463zm0 .272h.0166c.2179.0052.4874.2715.5644.3639l.005.006.0052.0055 10.169 10.9905a.6915.6915 0 0 1-.0072.945l-1.0666 1.133-1.4982-1.7724-8.5994-10.39c-.3286-.472-.352-.6183-.2592-.841a.7307.7307 0 0 1 .6704-.4401Zm14.341 1.5701a.877.877 0 0 0-.6554.2418l-5.6962 6.1584 1.6944 1.8319 5.3089-6.5138c.3251-.4335.479-.6603.3247-1.0292a1.1205 1.1205 0 0 0-.9763-.689zm-7.6557 12.2823 1.3186 1.4135-5.7864 6.1295a.6494.6494 0 0 1-.4959.26.7516.7516 0 0 1-.706-.4669c-.1119-.2682.0359-.6864.2442-.9083l.0051-.0055.0047-.0055z"/></svg>arXiv</span><span class="b-val v-arxiv">Paper</span>
           </a>
@@ -68,17 +65,12 @@
             <span class="b-key"><svg viewBox="0 0 24 24" fill="#FFD21E" aria-hidden="true"><path d="M12.025 1.13c-5.77 0-10.449 4.647-10.449 10.378 0 1.112.178 2.181.503 3.185.064-.222.203-.444.416-.577a.96.96 0 0 1 .524-.15c.293 0 .584.124.84.284.278.173.48.408.71.694.226.282.458.611.684.951v-.014c.017-.324.106-.622.264-.874s.403-.487.762-.543c.3-.047.596.06.787.203s.31.313.4.467c.15.257.212.468.233.542.01.026.653 1.552 1.657 2.54.616.605 1.01 1.223 1.082 1.912.055.537-.096 1.059-.38 1.572.637.121 1.294.187 1.967.187.657 0 1.298-.063 1.921-.178-.287-.517-.44-1.041-.384-1.581.07-.69.465-1.307 1.081-1.913 1.004-.987 1.647-2.513 1.657-2.539.021-.074.083-.285.233-.542.09-.154.208-.323.4-.467a1.08 1.08 0 0 1 .787-.203c.359.056.604.29.762.543s.247.55.265.874v.015c.225-.34.457-.67.683-.952.23-.286.432-.52.71-.694.257-.16.547-.284.84-.285a.97.97 0 0 1 .524.151c.228.143.373.388.43.625l.006.04a10.3 10.3 0 0 0 .534-3.273c0-5.731-4.678-10.378-10.449-10.378M8.327 6.583a1.5 1.5 0 0 1 .713.174 1.487 1.487 0 0 1 .617 2.013c-.183.343-.762-.214-1.102-.094-.38.134-.532.914-.917.71a1.487 1.487 0 0 1 .69-2.803m7.486 0a1.487 1.487 0 0 1 .689 2.803c-.385.204-.536-.576-.916-.71-.34-.12-.92.437-1.103.094a1.487 1.487 0 0 1 .617-2.013 1.5 1.5 0 0 1 .713-.174m-10.68 1.55a.96.96 0 1 1 0 1.921.96.96 0 0 1 0-1.92m13.838 0a.96.96 0 1 1 0 1.92.96.96 0 0 1 0-1.92M8.489 11.458c.588.01 1.965 1.157 3.572 1.164 1.607-.007 2.984-1.155 3.572-1.164.196-.003.305.12.305.454 0 .886-.424 2.328-1.563 3.202-.22-.756-1.396-1.366-1.63-1.32q-.011.001-.02.006l-.044.026-.01.008-.03.024q-.018.017-.035.036l-.032.04a1 1 0 0 0-.058.09l-.014.025q-.049.088-.11.19a1 1 0 0 1-.083.116 1.2 1.2 0 0 1-.173.18q-.035.029-.075.058a1.3 1.3 0 0 1-.251-.243 1 1 0 0 1-.076-.107c-.124-.193-.177-.363-.337-.444-.034-.016-.104-.008-.2.022q-.094.03-.216.087-.06.028-.125.063l-.13.074q-.067.04-.136.086a3 3 0 0 0-.135.096 3 3 0 0 0-.26.219 2 2 0 0 0-.12.121 2 2 0 0 0-.106.128l-.002.002a2 2 0 0 0-.09.132l-.001.001a1.2 1.2 0 0 0-.105.212q-.013.036-.024.073c-1.139-.875-1.563-2.317-1.563-3.203 0-.334.109-.457.305-.454m.836 10.354c.824-1.19.766-2.082-.365-3.194-1.13-1.112-1.789-2.738-1.789-2.738s-.246-.945-.806-.858-.97 1.499.202 2.362c1.173.864-.233 1.45-.685.64-.45-.812-1.683-2.896-2.322-3.295s-1.089-.175-.938.647 2.822 2.813 2.562 3.244-1.176-.506-1.176-.506-2.866-2.567-3.49-1.898.473 1.23 2.037 2.16c1.564.932 1.686 1.178 1.464 1.53s-3.675-2.511-4-1.297c-.323 1.214 3.524 1.567 3.287 2.405-.238.839-2.71-1.587-3.216-.642-.506.946 3.49 2.056 3.522 2.064 1.29.33 4.568 1.028 5.713-.624m5.349 0c-.824-1.19-.766-2.082.365-3.194 1.13-1.112 1.789-2.738 1.789-2.738s.246-.945.806-.858.97 1.499-.202 2.362c-1.173.864.233 1.45.685.64.451-.812 1.683-2.896 2.322-3.295s1.089-.175.938.647-2.822 2.813-2.562 3.244 1.176-.506 1.176-.506 2.866-2.567 3.49-1.898-.473 1.23-2.037 2.16c-1.564.932-1.686 1.178-1.464 1.53s3.675-2.511 4-1.297c.323 1.214-3.524 1.567-3.287 2.405.238.839 2.71-1.587 3.216-.642.506.946-3.49 2.056-3.522 2.064-1.29.33-4.568 1.028-5.713-.624"/></svg>Hugging Face</span><span class="b-val v-hf">Environment</span>
           </a>
           <a class="btn split" href="https://www.modelscope.ai/datasets/mxlin043/OmniGameArena" target="_blank" rel="noopener">
-            <span class="b-key"><img src="assets/paper/icons/modelscope.png" alt="" width="17" height="17">ModelScope</span><span class="b-val v-ms">Environment</span>
-          </a>
-          <!-- Playable online demo (Eagle 3D Streaming / Pixel Streaming) -->
-          <a class="btn split" href="https://connector.eagle3dstreaming.com/v5/MaxLin/OmniGameArena/default" target="_blank" rel="noopener">
-            <span class="b-key"><img src="assets/paper/icons/eagle.svg" alt="" class="eagle" width="26" height="20">Eagle</span><span class="b-val v-demo">Live Demo</span>
+            <span class="b-key"><img src="webpage/assets/paper/icons/modelscope.png" alt="" width="17" height="17">ModelScope</span><span class="b-val v-ms">Environment</span>
           </a>
         </nav>
 
         <figure class="teaser">
-          <div class="fig"><img src="assets/paper/teaser.png?v=21" alt="OmniGameArena at a glance: twelve UE5 games across Solo, PvP, and Coop; heterogeneous agents connect to the same real-time UE5 environment through adapters; evaluation reports the cold-start leaderboard and the Improvement Dynamics Curve."></div>
-          <figcaption><b>OmniGameArena at a glance.</b> Twelve newly built UE5 games span Solo (7), PvP (3), and Coop (2). Heterogeneous agents (commercial VLMs, open-weight VLMs, keyboard-mouse and gamepad policies) connect to the same real-time UE5 environment through documented adapters. Evaluation reports the cold-start leaderboard and the Improvement Dynamics Curve (IDC) under multi-round reflection.</figcaption>
+          <div class="fig"><img src="webpage/assets/paper/teaser.svg?v=23" width="2560" height="1536" alt="OmniGameArena at a glance: the twelve games of the suite, the unified interaction harness from observation through agents and adapters to the UE5 environment, and the three-level evaluation: cold-start score, Improvement Dynamics Curve and transfer test."></div>
         </figure>
       </header>
 
@@ -87,35 +79,7 @@
         <div class="wrap">
           <div class="head"><span class="kicker">Abstract</span></div>
           <div class="measure abstract">
-            <p>Vision-language model (VLM) agents are increasingly deployed in interactive game environments. Yet game benchmarks for VLM agents typically report a single first-attempt score per (agent, game) pair, focus on single-agent Solo play, and lack unified protocols for evaluating heterogeneous agent classes (commercial VLMs, open-weight VLMs, and specialized game policies) on the same footing.</p>
-            <p>We address these gaps with <b>OmniGameArena</b>, a real-time benchmark of twelve newly built Unreal Engine&nbsp;5 games spanning Solo (7), PvP (3), and Coop (2) with unified action interfaces, and the <b>Improvement Dynamics Curve (IDC)</b>, an agentic-reflection harness in which a tool-using reflector LLM autonomously refines a bounded skill prompt across multiple rounds. Beyond cold-start leaderboard scores, IDC exposes two additional observables for each (agent, game) pair: how the score evolves across reflection rounds, and how the learned skill behaves on held-out task variants. We report these observables for twelve VLM agents on the cold-start leaderboard and four top agents under IDC.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- ============== CONTRIBUTIONS ============== -->
-      <section class="soft">
-        <div class="wrap">
-          <div class="head">
-            <span class="kicker">Contributions</span>
-            <h2>What OmniGameArena adds</h2>
-          </div>
-          <div class="contribs">
-            <article class="contrib">
-              <span class="num">1</span>
-              <h3>A twelve-game UE5 benchmark</h3>
-              <p>Solo, PvP, and Coop regimes share a unified action interface. Every game instance (rules, layouts, scripts, scoring) is authored from scratch for this benchmark rather than reused from public titles, which lowers pre-training leakage and contamination.</p>
-            </article>
-            <article class="contrib">
-              <span class="num">2</span>
-              <h3>The IDC harness</h3>
-              <p>An agentic-reflection framework whose autonomous tool-use reflector refines a bounded skill prompt across rounds, with persistent memory and best-skill rollback, turning each instance into an improvement trajectory.</p>
-            </article>
-            <article class="contrib">
-              <span class="num">3</span>
-              <h3>Empirical findings across agents</h3>
-              <p>Across games and agents, leadership rotates and no single VLM dominates; origin-task improvement does not by itself predict held-out variant transfer, a divergence that cold-start leaderboard scores hide but multi-round reflection brings out.</p>
-            </article>
+            <p>Most game benchmarks score a foundation model the first time it meets a game, and rarely measure what the model can make of the game once it has played it and reflected on its play. We measure a model at three levels, a <b>cold-start score</b> at its first contact with a game, an <b>Improvement Dynamics Curve (IDC)</b> of its score after every round of reflection, and a <b>transfer test</b> that re-runs the skill it learned through reflection on variants of the game. These levels need games that no model has seen and that ship with variants of themselves. We built <b>OmniGameArena</b>, a single Unreal Engine&nbsp;5 build of twelve such games played from the rendered frame, covering solo, adversarial and cooperative play, each with four variants that alter it in one respect. Across 72 curves of six VLMs, reflection raises the best round more than 0.1 above the cold-start score in 42, yet in half of these the first round shows at most 0.05 of the gain and in a quarter the last round ends more than 0.1 below the best. The learned skills gain 0.19 on average on the game they were written from and 0.03 on its variants, and the size of the gain on the practiced game explains about a tenth of what carries over. Neither pattern is visible in a single score, whether it is taken at first contact or after one round of reflection.</p>
           </div>
         </div>
       </section>
@@ -130,8 +94,7 @@
           </div>
 
           <figure class="radar-fig">
-            <div class="fig"><img src="assets/paper/radar.png" alt="Radar charts of the twelve OmniGameArena games across seven capability dimensions."></div>
-            <figcaption>Capability profiles of the twelve games across seven dimensions (<b>VP</b> Visual Perception, <b>SN</b> Spatial Navigation, <b>RT</b> Reaction, <b>MEM</b> Memory, <b>PLN</b> Planning, <b>ADV</b> Adversarial, <b>COOP</b> Cooperation), each scored from 0 to 3.</figcaption>
+            <div class="fig"><img src="webpage/assets/paper/radar.png" alt="Radar charts of the twelve OmniGameArena games across seven capability dimensions."></div>
           </figure>
 
           <div class="tabs" role="tablist" aria-label="Game regimes">
@@ -144,62 +107,68 @@
         </div>
       </section>
 
-      <!-- ============== METHOD / IDC ============== -->
+      <!-- ============== EVALUATION PROTOCOL ============== -->
       <section class="soft" id="method">
         <div class="wrap">
           <div class="head">
-            <span class="kicker">Framework Design</span>
-            <h2>The Improvement Dynamics Curve</h2>
-            <p>Each (agent, game) instance runs for multiple rounds. The agent plays K episodes under a current skill prompt; a tool-using reflector then inspects the trajectories, deciding on its own what to read and when to stop, before refining the skill for the next round.</p>
+            <span class="kicker">Evaluation Protocol</span>
+            <h2>Three measurements</h2>
+            <p>Each measurement builds on the one before: round 0 of every curve is the cold-start score, and the transfer test re-runs the skill of the best round of the curve.</p>
           </div>
 
+          <div class="contribs levels">
+            <article class="contrib">
+              <span class="num">1</span>
+              <h3>Cold-start score</h3>
+              <p>The agent plays from the rendered frame under an empty skill prompt. The game is paused while the model thinks, so the score reflects the decisions alone. A cell is five episodes of one agent on one game, and the cold-start score is their mean.</p>
+            </article>
+            <article class="contrib">
+              <span class="num">2</span>
+              <h3>Improvement Dynamics Curve</h3>
+              <p>Each round the agent plays five episodes under the current skill prompt, and the same model then reflects on the trajectories and writes the next skill. Ten rounds of reflection give the curve of round scores <i>S</i><sub>0</sub> to <i>S</i><sub>10</sub>, where <i>S</i><sub>0</sub> is the cold-start score.</p>
+            </article>
+            <article class="contrib">
+              <span class="num">3</span>
+              <h3>Transfer test</h3>
+              <p>The learned skill, the skill of the best round, is run on each of the four variants of the game for five episodes. The reference is the cold-start score of the same agent on the same variant. The variants were fixed before any transfer run and are the same for every agent.</p>
+            </article>
+          </div>
+
+          <p class="block-title method-sub">Multi-round reflection</p>
           <figure class="idc-fig">
-            <div class="fig"><img src="assets/paper/idc-framework.png" alt="IDC framework: Experience Acquisition Module, Reflection Module with Explore, Diagnose, Validate, Distill, and Persistent Module."></div>
-            <figcaption>The IDC harness couples an <b>Experience Acquisition</b> module, a tool-using <b>Reflection</b> module, and a <b>Persistent</b> module that carries the experience notebook, validated skills, and the per-round score curve across rounds.</figcaption>
+            <div class="fig"><img src="webpage/assets/paper/idc-framework.png" alt="Multi-round reflection: an experience acquisition module, a reflection module in four stages (Explore, Diagnose, Validate, Distill), and a persistent module."></div>
           </figure>
 
           <div class="steps">
-            <div class="step"><div class="t"><span>1</span>Explore</div><p>Inspect, search, and review the K episode trajectories from the current round.</p></div>
-            <div class="step"><div class="t"><span>2</span>Diagnose</div><p>Compare causes across episodes and explain the success and failure cases.</p></div>
-            <div class="step"><div class="t"><span>3</span>Validate</div><p>Test, verify, and confirm candidate skills before they are committed to the persistent skill set.</p></div>
-            <div class="step"><div class="t"><span>4</span>Distill</div><p>Summarize, refine, and store the refined skill prompt for the next round.</p></div>
+            <div class="step"><div class="t"><span>1</span>Explore</div><p>Reads the round's trajectories through sandboxed read-only tools (list_dir, read_text, read_image, grep).</p></div>
+            <div class="step"><div class="t"><span>2</span>Diagnose</div><p>Commits an explicit list of failure modes, separating causes from prescriptions.</p></div>
+            <div class="step"><div class="t"><span>3</span>Validate</div><p>Proposes an updated skill to an independent LLM judge, which rejects proposals that memorize map content or contradict the diagnosis; up to five tries.</p></div>
+            <div class="step"><div class="t"><span>4</span>Distill</div><p>Finalizes the accepted skill for the next round and, optionally, adds durable observations to the notebook.</p></div>
           </div>
         </div>
       </section>
 
-      <!-- ============== RESULTS ============== -->
+      <!-- ============== RESULTS: COLD START ============== -->
       <section id="results">
         <div class="wrap">
           <div class="head head--wide">
-            <span class="kicker">Results &middot; Cold-start</span>
-            <h2>Cold-start performance</h2>
+            <span class="kicker">Results &middot; Cold Start</span>
+            <h2>Cold-start scores</h2>
+            <p>Twelve agents on the twelve games. Round 0 of every curve below is one of these cells.</p>
           </div>
 
-          <p class="block-title">Leaderboard</p>
-          <div class="track-toggle" data-lb-track aria-label="Evaluation track">
-            <button class="trk active" type="button" data-track="pdq">Quality &middot; PDQ</button>
-            <button class="trk" type="button" data-track="lcrt">Real-time &middot; LCRT</button>
-          </div>
-          <div class="tabs" role="tablist" aria-label="Result regimes" data-lb-tabs>
+          <div class="tabs" role="tablist" aria-label="Cold-start regimes" data-cold-tabs>
             <button class="tab active" type="button" role="tab" data-reg="solo">Solo</button>
             <button class="tab" type="button" role="tab" data-reg="pvp">PvP</button>
             <button class="tab" type="button" role="tab" data-reg="coop">Coop</button>
           </div>
-          <p class="block-sub" data-lb-sub>Mean normalized score · Solo · Quality (PDQ)</p>
-          <div class="lb" data-leaderboard></div>
-          <div class="legend" data-lb-legend></div>
-          <figure class="pvp-detail" data-pvp-detail hidden>
-            <p class="block-sub">Head-to-head win-rates across all PvP pairings: each cell is the row model (Player 1) vs. the column model (Player 2).</p>
-            <div class="fig"><img data-pvp-pdq src="assets/paper/pvp-heatmaps.png" alt="PvP win-rate heatmaps for SkyDuel, CrystalGuard, and MidlineClash."></div>
-            <div class="fig fig-lcrt" hidden><img data-pvp-lcrt src="assets/paper/lcrt-pvp-heatmap.png?v=2" alt="Real-time MidlineClash per-matchup score matrix."></div>
-          </figure>
+          <div class="cold" data-cold></div>
 
           <div style="margin-top:64px">
             <p class="block-title">Gameplay recordings</p>
-            <p class="block-sub">Browse cold-start episodes by game. Solo and Coop show every model; PvP is a head-to-head matchup viewer. Numbers are normalized scores.</p>
             <div class="track-toggle" data-vid-track aria-label="Evaluation track">
-              <button class="trk active" type="button" data-track="pdq">Quality &middot; PDQ</button>
-              <button class="trk" type="button" data-track="lcrt">Real-time &middot; LCRT</button>
+              <button class="trk active" type="button" data-track="lfm">Latency-free mode</button>
+              <button class="trk" type="button" data-track="lcm">Latency-charged mode</button>
             </div>
             <div class="tabs" role="tablist" aria-label="Recording regimes" data-vid-regime>
               <button class="tab active" type="button" data-reg="Solo">Solo</button>
@@ -212,29 +181,46 @@
         </div>
       </section>
 
-      <!-- ============== RESULTS: IMPROVEMENT DYNAMICS (IDC) ============== -->
+      <!-- ============== RESULTS: IMPROVEMENT DYNAMICS CURVES ============== -->
       <section class="soft" id="idc-results">
         <div class="wrap">
           <div class="head head--wide">
             <span class="kicker">Results &middot; Improvement Dynamics</span>
-            <h2>Improvement under IDC</h2>
+            <h2>Improvement Dynamics Curves</h2>
           </div>
 
-          <p class="block-sub">A tool-using reflector distills a skill prompt from the agent's own episodes.<br>Below: the learned skill, how its score evolves across reflection rounds, and how the skill transfers to three held-out task variants (with vs. without skill).</p>
-            <div class="tabs" role="tablist" aria-label="IDC games" data-idc-game></div>
-            <div class="mu-pick"><span class="mu-lab">Model</span><div class="mu-btns" data-idc-model></div></div>
+            <div class="tabs game-tabs" role="tablist" aria-label="IDC games" data-idc-game></div>
             <div data-idc-content></div>
 
           <div class="takeaways">
-            <div class="takeaway"><h4>No single winner</h4><p>Leadership rotates across games; commercial agents hold a wide gap over open-weight VLMs and specialized policies.</p></div>
-            <div class="takeaway"><h4>Improvement peaks mid-curve</h4><p>All four top agents improve over their cold-start baseline through reflection, yet peak performance is typically reached before the final round.</p></div>
-            <div class="takeaway"><h4>Transfer can diverge</h4><p>Origin-task improvement and held-out variant transfer can diverge, a divergence that cold-start leaderboard scores do not reveal.</p></div>
+            <div class="takeaway"><h4>Whether the score rises</h4><p>Of the 72 curves, 42 have a best round more than 0.1 above R0. On LastStand, CueChase and CrystalGuard all six curves rise; on MidlineClash none does.</p></div>
+            <div class="takeaway"><h4>How many rounds it takes</h4><p>Of the 42 rising curves, 21 gain at most 0.05 in the first round of reflection and reach their best round between rounds 2 and 9.</p></div>
+            <div class="takeaway"><h4>Whether the gain holds</h4><p>Of the 42 rising curves, 10 end more than 0.1 below their best round and 3 more than 0.2 below it.</p></div>
           </div>
         </div>
       </section>
 
-      <!-- ============== CITATION ============== -->
-      <section class="soft" id="citation">
+      <!-- ============== RESULTS: TRANSFER TEST ============== -->
+      <section class="soft" id="transfer-results">
+        <div class="wrap">
+          <div class="head head--wide">
+            <span class="kicker">Results &middot; Transfer Test</span>
+            <h2>Learned skills on the variants</h2>
+          </div>
+
+            <div class="tabs game-tabs" role="tablist" aria-label="Transfer games" data-tr-game></div>
+            <div class="mu-pick"><span class="mu-lab">Model</span><div class="mu-btns" data-tr-model></div></div>
+            <div data-transfer-content></div>
+
+          <div class="takeaways">
+            <div class="takeaway"><h4>Whether the gain survives the change</h4><p>The 72 skills gain 0.19 on average on the practiced game and 0.03 on its variants, where they score below the cold-start score in two cells out of five.</p></div>
+            <div class="takeaway"><h4>Whether the curve tells which skills carry over</h4><p>In part: the size of the gain accounts for about a tenth of the variance in what carries over (Pearson r = 0.34 across the 72 skills).</p></div>
+            <div class="takeaway"><h4>Two skills on LastStand</h4><p>Claude Opus 4.7 and GPT-5.5 gain 0.62 and 0.55 over R0. On the variants the skill of GPT-5.5 scores above the cold-start score on all four, the skill of Claude Opus 4.7 below it on all four.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="citation">
         <div class="wrap">
           <div class="head">
             <span class="kicker">BibTeX</span>
@@ -251,6 +237,7 @@
           </div>
         </div>
       </section>
+
     </main>
 
     <footer>
@@ -261,6 +248,7 @@
     </footer>
 
     <div class="toast" role="status" aria-live="polite" data-toast></div>
-    <script src="script.js?v=74"></script>
+    <script src="webpage/data.js?v=143"></script>
+    <script src="webpage/script.js?v=143"></script>
   </body>
 </html>
