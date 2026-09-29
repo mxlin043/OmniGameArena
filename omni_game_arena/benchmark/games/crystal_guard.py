@@ -1,6 +1,6 @@
 """CrystalGuard GameSpec.
 
-Two-player BaseAssault map. Each player fires baseball projectiles from a
+Two-player PvP map. Each player fires baseball projectiles from a
 crosshair view and tries to destroy the opponent crystal while defending their
 own crystal.
 """
@@ -27,8 +27,8 @@ class CrystalGuardSpec(GameSpec):
     name: str = "crystal_guard"
     prompt_key: str = "CrystalGuardPlayer1"
     default_task: str = (
-        "Destroy the opposing crystal in BaseAssault while defending your "
-        "own crystal. Aim with the crosshair and shoot baseball projectiles."
+        "Destroy the opposing crystal while defending your own crystal. "
+        "Aim with the crosshair and shoot baseball projectiles."
     )
     mode: Literal["pvp"] = "pvp"
     num_agents: int = 2

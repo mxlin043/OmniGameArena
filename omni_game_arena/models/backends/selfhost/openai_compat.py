@@ -11,11 +11,22 @@ import requests
 from PIL import Image
 
 from ..base import Backend
+from ..commercial.openai_backend import (
+    _extract_server_latency_ms,
+    _to_anthropic_response,
+    _to_openai_messages,
+    _to_openai_tool_specs,
+)
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_BASE_URL = "http://127.0.0.1:8000/v1"
 DEFAULT_MAX_TOKENS = 512
+# Tool-use calls come from the IDC reflector, which has to emit a whole
+# skill memo in one turn. The player-side ``max_tokens`` (512) is sized for
+# a single action decision and truncates memos, so tool use gets its own
+# budget rather than borrowing that one.
+DEFAULT_TOOL_MAX_TOKENS = 4096
 RETRYABLE_STATUS = {408, 425, 429, 500, 502, 503, 504}
 
 
@@ -33,6 +44,7 @@ class OpenAICompatSelfHostBackend(Backend):
         api_key: str | None = None,
         request_model: str | None = None,
         max_tokens: int | None = None,
+        tool_max_tokens: int | None = None,
         enable_thinking: bool | None = None,
         chat_template_kwargs: dict[str, Any] | None = None,
         extra_body: dict[str, Any] | None = None,
@@ -44,6 +56,11 @@ class OpenAICompatSelfHostBackend(Backend):
         self.request_model = request_model or model
         self.max_tokens = (
             DEFAULT_MAX_TOKENS if max_tokens is None else int(max_tokens)
+        )
+        self.tool_max_tokens = (
+            DEFAULT_TOOL_MAX_TOKENS
+            if tool_max_tokens is None
+            else int(tool_max_tokens)
         )
         self.enable_thinking = (
             self.default_enable_thinking
@@ -200,6 +217,165 @@ class OpenAICompatSelfHostBackend(Backend):
 
         return ""
 
+    # -- chat_with_tools (Anthropic-shape adapter over OpenAI tool use) --
+    def chat_with_tools(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+        *,
+        system: str | None = None,
+        max_tokens: int | None = None,
+    ) -> dict:
+        """Tool-use call mirroring the commercial backends' contract.
+
+        ``AnalyzerHarness`` speaks Anthropic shapes (content blocks,
+        ``tool_use``, ``input_schema``) so it can stay backend-agnostic;
+        an OpenAI-compatible server speaks ``tools`` / ``tool_calls`` /
+        ``parameters``. The translation is identical to the commercial
+        OpenAI route, so reuse its converters rather than growing a
+        second copy that can drift.
+
+        Without this method ``pick_backend`` returns a self-host backend
+        the agentic IDC reflector rejects outright, so self-hosted models
+        could play games but never reflect on them.
+
+        Returns ``{}`` on permanent failure - same contract as ``chat()``
+        returning ``""``.
+        """
+        self.last_messages = messages
+        self._clear_latency_metadata()
+
+        params: dict[str, Any] = {
+            "model": self.request_model,
+            "messages": _to_openai_messages(messages, system=system),
+            "tools": _to_openai_tool_specs(tools),
+            "tool_choice": "auto",
+            "max_tokens": int(max_tokens) if max_tokens else self.tool_max_tokens,
+        }
+        if self.temperature is not None:
+            params["temperature"] = self.temperature
+
+        chat_kwargs = dict(self.chat_template_kwargs)
+        if self.enable_thinking is not None:
+            chat_kwargs["enable_thinking"] = self.enable_thinking
+        if chat_kwargs:
+            params["chat_template_kwargs"] = chat_kwargs
+        params.update(self.extra_body)
+
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+
+        body_data = json.dumps(params, ensure_ascii=False)
+        total = self.max_retries + 1
+        for attempt in range(total):
+            attempt_no = attempt + 1
+            t0 = time.time()
+            try:
+                resp = requests.post(
+                    url=f"{self.base_url}/chat/completions",
+                    data=body_data,
+                    headers=headers,
+                    timeout=self.request_timeout,
+                )
+            except requests.exceptions.RequestException as exc:
+                self.last_response_json = {
+                    "error": type(exc).__name__,
+                    "text": str(exc),
+                }
+                if attempt_no < total:
+                    logger.warning(
+                        "%s tool-use network error (attempt %d/%d): %s; retrying",
+                        self.provider_name, attempt_no, total, exc,
+                    )
+                    time.sleep(min(2 ** attempt, 5.0))
+                    continue
+                logger.error("%s tool-use network error: %s", self.provider_name, exc)
+                self._debug_record(
+                    messages=messages,
+                    response=self.last_response_json,
+                    latency_s=time.time() - t0,
+                    status="error",
+                    extra={"attempts": attempt_no, "mode": "tool_use"},
+                )
+                return {}
+
+            if resp.status_code in RETRYABLE_STATUS and attempt_no < total:
+                logger.warning(
+                    "%s tool-use HTTP %d (attempt %d/%d); retrying: %s",
+                    self.provider_name, resp.status_code, attempt_no, total,
+                    resp.text[:200],
+                )
+                self.last_response_json = {
+                    "error": resp.status_code,
+                    "text": resp.text,
+                }
+                time.sleep(min(2 ** attempt, 5.0))
+                continue
+
+            if resp.status_code != 200:
+                # A 400 here is usually the context limit, which is worth
+                # saying out loud: the harness only sees an empty body and
+                # would otherwise report a bare "returned empty".
+                logger.error(
+                    "%s tool-use API error: %d - %s",
+                    self.provider_name, resp.status_code, resp.text[:500],
+                )
+                self.last_response_json = {
+                    "error": resp.status_code,
+                    "text": resp.text,
+                }
+                self._debug_record(
+                    messages=messages,
+                    response=self.last_response_json,
+                    latency_s=time.time() - t0,
+                    status=f"http_{resp.status_code}",
+                    extra={"attempts": attempt_no, "mode": "tool_use"},
+                )
+                return {}
+
+            try:
+                result = json.loads(resp.text)
+            except json.JSONDecodeError as exc:
+                logger.error(
+                    "%s failed to parse tool-use response: %s",
+                    self.provider_name, exc,
+                )
+                self._debug_record(
+                    messages=messages,
+                    response=resp.text,
+                    latency_s=time.time() - t0,
+                    status="parse_error",
+                    extra={"attempts": attempt_no, "mode": "tool_use"},
+                )
+                return {}
+
+            self.last_response_json = result
+            self._set_latency_from_response(result)
+            shaped = _to_anthropic_response(result)
+
+            # Reasoning-parser servers (sglang --reasoning-parser qwen3) put
+            # the visible text in reasoning_content and leave content null.
+            # The shared converter only reads content, so a thinking turn
+            # would arrive with no text block at all and the harness would
+            # see a contentless assistant message. Recover it here.
+            if not shaped.get("content"):
+                message = ((result.get("choices") or [{}])[0] or {}).get("message") or {}
+                reasoning = message.get("reasoning_content")
+                if isinstance(reasoning, str) and reasoning.strip():
+                    shaped["content"] = [{"type": "text", "text": reasoning}]
+
+            self._debug_record(
+                messages=messages,
+                response=shaped,
+                latency_s=time.time() - t0,
+                status="ok" if shaped.get("content") else "empty",
+                extra={"attempts": attempt_no, "mode": "tool_use"},
+            )
+            return shaped
+
+        return {}
+
     def _build_request_body(self, messages: list[dict]) -> dict[str, Any]:
         params: dict[str, Any] = {
             "messages": messages,
@@ -220,9 +396,10 @@ class OpenAICompatSelfHostBackend(Backend):
 
     def _set_latency_from_response(self, body: dict[str, Any]) -> None:
         usage = body.get("usage") or {}
+        server_ms = _extract_server_latency_ms(usage)
         self._set_decision_latency(
-            None,
-            source=None,
+            None if server_ms is None else server_ms / 1000.0,
+            source=None if server_ms is None else "usage.latency_checkpoint.engine_ttlt_ms",
             details={
                 "output_tokens": usage.get("completion_tokens"),
                 "reasoning_tokens": usage.get("reasoning_tokens")

@@ -142,9 +142,9 @@ def map_supports_two_players(map_value: str) -> bool:
     names = multiplayer_game_names()
     if any(key == n or key.startswith(n + "_") for n in names):
         return True
-    # Fallback for raw UE paths (e.g. .../CookHouse_Coop, .../BaseAssault_VS).
+    # Fallback for raw UE paths of two-player maps (e.g. .../*_Coop, .../*_VS).
     low = key.lower()
-    return "/" in key and any(t in low for t in ("coop", "_vs", "asycoop"))
+    return "/" in key and any(t in low for t in ("coop", "_vs"))
 
 
 # -- Gamepad: pygame index -> UE5 name (Xbox / XInput layout under SDL2) ---

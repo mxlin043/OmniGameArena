@@ -1,9 +1,9 @@
 """Agent / Adapter factory.
 
-Composes one ``(agent, adapter)`` pair per experiment cell from three
+Composes one ``(agent, adapter)`` pair per experiment cell from four
 clean axes:
 
-  - ``profile.kind``    - agent class:   ``vlm`` | ``openp2p`` | ``nitrogen``.
+  - ``profile.kind``    - ``vlm`` | ``openp2p`` | ``nitrogen`` | ``random``.
   - ``profile.method``  - VLM output style (only meaningful when
     ``kind == "vlm"``):  ``lumine`` (main table).
   - ``profile.extra``   - per-agent kwargs forwarded to the constructor.
@@ -21,7 +21,7 @@ from omni_game_arena.adapters.base import BaseActionAdapter
 from omni_game_arena.adapters.keyboard_mouse_chunked import KeyboardMouseChunkedAdapter
 from omni_game_arena.adapters.nitrogen_adapter import NitroGenAdapter
 from omni_game_arena.adapters.p2p_adapter import P2PAdapter
-from omni_game_arena.models import NitroGenAgent, OpenP2PAgent, VLMAgent
+from omni_game_arena.models import NitroGenAgent, OpenP2PAgent, RandomAgent, VLMAgent
 from omni_game_arena.prompts.skill_injection import load_prompt_skills
 
 from .config import ParamsPoint, AgentProfile
@@ -49,9 +49,11 @@ def build_agent_and_adapter(
         return _build_openp2p(profile)
     if kind == "nitrogen":
         return _build_nitrogen(profile)
+    if kind == "random":
+        return _build_random(profile, params, game)
     raise ValueError(
         "Unknown agent kind: "
-        f"{profile.kind!r} (expected vlm | openp2p | nitrogen)"
+        f"{profile.kind!r} (expected vlm | openp2p | nitrogen | random)"
     )
 
 
@@ -66,6 +68,14 @@ def _build_vlm(
     method = (profile.method or "lumine").lower()
     adapter = _adapter_for_method(method, game, params)
     method_style = _method_for_params(method, params)
+    prompt_key = (
+        profile.game_prompt_key
+        or game.prompt_key_for_player(player_index)
+    )
+    if "{player}" in prompt_key:
+        if player_index is None or not 0 <= player_index < game.num_agents:
+            raise ValueError("A {player} game_prompt_key requires a valid player index")
+        prompt_key = prompt_key.replace("{player}", str(player_index + 1))
 
     # ``extra`` carries endpoint kwargs (``base_url``, ``api_key``) and any
     # agent-side override (``include_history_actions``).
@@ -80,14 +90,15 @@ def _build_vlm(
         temperature=params.temperature,
         history_len=params.history_len,
         history_reasoning_len=params.history_reasoning_len,
-        game=(
-            game.prompt_key_for_player(player_index)
-            if params.with_game_prompt
-            else None
-        ),
+        with_visual_input=params.with_visual_input,
+        game=prompt_key if params.with_game_prompt else None,
+        with_game_prompt=params.with_game_prompt,
+        with_controls_prompt=params.with_controls_prompt,
+        with_skill_prompt=params.with_skill_prompt,
+        with_output_format_prompt=params.with_output_format_prompt,
         **agent_extra,
     )
-    prompt_skill_text = load_prompt_skills(profile.prompt_skills)
+    prompt_skill_text = load_prompt_skills(profile.prompt_skills) if params.with_skill_prompt else ""
     agent.system_experience = prompt_skill_text
     if prompt_skill_text:
         logger.info(
@@ -178,12 +189,53 @@ def _build_nitrogen(profile: AgentProfile) -> tuple[NitroGenAgent, NitroGenAdapt
     return agent, adapter
 
 
+def _build_random(
+    profile: AgentProfile,
+    params: ParamsPoint,
+    game: GameSpec,
+) -> tuple[RandomAgent, KeyboardMouseChunkedAdapter]:
+    """Build the no-backend random baseline on the normal chunked adapter."""
+    adapter = _adapter_for_method(profile.method or "lumine", game, params)
+    if not isinstance(adapter, KeyboardMouseChunkedAdapter):
+        raise TypeError("RandomAgent requires KeyboardMouseChunkedAdapter")
+
+    allowed = {
+        "seed",
+        "max_actions_per_step",
+        "mouse_x_choices",
+        "mouse_y_choices",
+        "mouse_z_choices",
+    }
+    unknown = set(profile.extra) - allowed
+    if unknown:
+        raise ValueError(
+            "RandomAgent received unsupported extra fields: "
+            + ", ".join(sorted(unknown))
+        )
+
+    agent = RandomAgent(
+        model=profile.model,
+        valid_keys=tuple(adapter.key_bindings.keys()),
+        mouse_axes=adapter.mouse_axes,
+        tap_keys=adapter.tap_keys,
+        tap_duration=adapter.tap_duration,
+        chunk_steps=adapter.chunk_steps,
+        **profile.extra,
+    )
+    return agent, adapter
+
+
 # -- Helpers -------------------------------------------------------------
 
 def _apply_frame_pack(agent, params: ParamsPoint) -> None:
     """Attach FramePack compression; no-op when kernel == 'none'."""
     if params.frame_pack == "none":
         return
+    if not params.with_visual_input:
+        raise ValueError(
+            "frame_pack requires with_visual_input=true; text-only/no-frame "
+            "runs must use frame_pack=none"
+        )
     cfg = FramePackConfig(
         kernel=params.frame_pack,
         base_size=params.resize_size,

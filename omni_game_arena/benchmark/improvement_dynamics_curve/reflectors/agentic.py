@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,7 @@ from omni_game_arena.skill import AnalyzerHarness
 from omni_game_arena.skill.prompts import TOOL_SPECS as _BASE_TOOL_SPECS
 
 from ..io import atomic_write_json, atomic_write_text, read_text_if_exists
+from ..pvp import reflection_readable_paths
 from ..lints import (
     compute_pre_signals,
     render_lints_markdown,
@@ -50,11 +52,12 @@ _VALIDATE_SKILL_SPEC: dict = {
         "memorization paraphrased, hidden prescription without numbers, "
         "diagnosis-memo misalignment, and whether lint signals are "
         "addressed. The judge returns a markdown report with 'Issues "
-        "found' and 'Verdict' (ok | needs_revision). You decide what to "
-        "do with the feedback. This tool is OPTIONAL — call it when you "
-        "want a second pair of eyes on your draft. Hard cap: 5 calls "
-        "per round; the 6th and beyond return a budget-exhausted "
-        "message instructing you to submit now."
+        "found' and 'Verdict' (ok | needs_revision). This tool is "
+        "REQUIRED: submit_skill accepts only a memo whose verdict was ok. "
+        "If the verdict is needs_revision, revise and call again. Hard "
+        "cap: 5 calls per round; if the 5th call still is not ok, the "
+        "lines the judge quoted are deleted from that draft and the rest "
+        "becomes this round's skill."
     ),
     "input_schema": {
         "type": "object",
@@ -161,9 +164,8 @@ def _build_idc_tool_specs() -> list[dict]:
                 "that field's description. submit_diagnosis MUST have "
                 "been called at least once before submit_skill, "
                 "otherwise this call will be rejected with retry. The "
-                "memo is also checked against banned-phrase and "
-                "bullet-budget lints; violations bounce back as a "
-                "tool_result with retry guidance."
+                "memo must be exactly a memo that validate_skill "
+                "returned ok for; any other memo is rejected."
             )
     # Append the new diagnosis + validator tools.
     specs.append(copy.deepcopy(_SUBMIT_DIAGNOSIS_SPEC))
@@ -198,7 +200,12 @@ class AgenticIDCReflector:
         self.max_text_chars_per_result = max(1024, int(max_text_chars_per_result))
         self.require_diagnosis_before_skill = bool(require_diagnosis_before_skill)
         self.regression_threshold = float(regression_threshold)
-        self.max_validate_skill_calls = max(0, int(max_validate_skill_calls))
+        self.max_validate_skill_calls = int(max_validate_skill_calls)
+        if self.max_validate_skill_calls < 1:
+            raise ValueError(
+                "validate_skill is required, so max_validate_skill_calls "
+                "must be at least 1"
+            )
 
         self.backend = pick_backend(
             model,
@@ -281,6 +288,21 @@ class AgenticIDCReflector:
 
         system_text = self.system_prompt
         seed = self._build_seed(inp, signals=signals)
+        pvp = (inp.aggregate or {}).get("pvp")
+        if pvp:
+            perspective = (
+                "You are improving only PLAYER 1 in a competitive PvP game. "
+                "Each episode pairs you with a fresh, fixed, cold-start PLAYER 2 opponent. "
+                "Only P1 receives your submitted skill. Never write cooperative advice "
+                "or assume the opponent follows your skill. Your evidence is limited to "
+                "P1's own observations, actions and CoT, plus public score summaries. "
+                "P2's private traces, CoT and combined match logs are inaccessible. "
+                "Your own traces are under episodes/ep_NN/player_1/reflection_trace/. "
+                "Read idc_context.json for the fixed opponent roster, primary metric "
+                "and per-opponent results; consider which opponent each episode faced."
+            )
+            system_text += "\n\n" + perspective
+            seed += "\n\n" + perspective
 
         # Capture context needed by the validate_skill handler. We bind
         # these into a closure so the handler can re-read them on each
@@ -290,6 +312,10 @@ class AgenticIDCReflector:
             "skill_in_text": effective_previous_skill,
             "lints_md": (round_dir / "lints.md").read_text(encoding="utf-8")
                 if (round_dir / "lints.md").exists() else "",
+            # One entry per judged draft: call number, verdict, memo key.
+            "attempts": [],
+            # Set when the 5th draft still fails and quoted lines are cut.
+            "trimmed": None,
         }
 
         def _validate_skill_handler(args: dict, harness_self) -> str:
@@ -297,6 +323,23 @@ class AgenticIDCReflector:
                 args=args,
                 harness=harness_self,
                 context=validate_ctx,
+            )
+
+        def _check_submission(submission: dict) -> str | None:
+            # validate_skill is required: only a memo the judge passed
+            # can be submitted.
+            key = _memo_key(str(submission.get("memo") or ""))
+            passed = {a["memo_key"] for a in validate_ctx["attempts"]
+                      if a["verdict"] == "ok"}
+            if key in passed:
+                return None
+            left = self.max_validate_skill_calls - len(validate_ctx["attempts"])
+            return (
+                "submit_skill REJECTED: this memo has not received an ok "
+                "verdict from validate_skill. Call validate_skill with this "
+                "exact memo and submit it once the verdict is ok "
+                f"({left} of {self.max_validate_skill_calls} validate_skill "
+                "calls left)."
             )
 
         harness = AnalyzerHarness(
@@ -311,9 +354,11 @@ class AgenticIDCReflector:
             system_prompt=system_text,
             seed_message=seed,
             tool_specs=IDC_TOOL_SPECS,
+            validate_submission=_check_submission,
             require_diagnosis_before_skill=self.require_diagnosis_before_skill,
             soft_tools=("submit_diagnosis",),
             tool_handlers={"validate_skill": _validate_skill_handler},
+            readable_paths=reflection_readable_paths(round_dir) if pvp else None,
         )
         memo, trace, messages = harness.run()
 
@@ -332,6 +377,11 @@ class AgenticIDCReflector:
                     "count": len(validations),
                     "cap": self.max_validate_skill_calls,
                     "calls": validations,
+                    "verdicts": [
+                        {"call": a["call"], "verdict": a["verdict"]}
+                        for a in validate_ctx["attempts"]
+                    ],
+                    "trimmed_after_cap": validate_ctx["trimmed"],
                 },
             )
         skill = (memo or "").strip()
@@ -433,16 +483,21 @@ class AgenticIDCReflector:
             "skills → episodes → frames).",
             "2. Call submit_diagnosis with explicit deletions/additions "
             "lists. This is REQUIRED before submit_skill.",
-            "3. Call submit_skill with the rewritten memo (and optional "
-            "notebook). The memo is checked against banned-phrase and "
-            "bullet-budget lints; violations bounce back with retry "
-            "guidance — fix and call again.",
+            "3. Call validate_skill with your draft memo (and optional "
+            "notebook). This is REQUIRED. If the verdict is "
+            "needs_revision, revise and validate again, at most "
+            f"{self.max_validate_skill_calls} calls this round. If the "
+            "last allowed call still is not ok, the lines the judge "
+            "quoted are deleted from that draft and the rest becomes the "
+            "skill.",
+            "4. Call submit_skill with exactly the memo that received ok "
+            "(and optional notebook).",
         ])
         if inp.round_idx == 0:
             lines.append(
                 "\nNote: this is the round_00 reflection — episodes here "
-                "are the official no-skill PDQ baseline carried over from "
-                "runs/pdq, so they ran without any skill "
+                "are the official no-skill LFM baseline carried over from "
+                "runs/lfm, so they ran without any skill "
                 "prompt. Your memo will become skill_1, which will be "
                 "frozen for the round_01 measurement."
             )
@@ -452,8 +507,9 @@ class AgenticIDCReflector:
                 "⚠️ RETRY — your PREVIOUS attempt this round ended WITHOUT "
                 "calling submit_skill, so it produced NO skill and was "
                 "wasted. This time you MUST finish the loop: keep "
-                "investigation brief, then call submit_diagnosis, then call "
-                "submit_skill with a complete memo. Do NOT end your turn "
+                "investigation brief, then call submit_diagnosis, then "
+                "validate_skill, then submit_skill with the memo that "
+                "received ok. Do NOT end your turn "
                 "until submit_skill has been called — a plain text reply "
                 "with no submit_skill tool call is a failure.",
             ])
@@ -467,34 +523,100 @@ class AgenticIDCReflector:
         harness,
         context: dict,
     ) -> str:
-        """Handler for the validate_skill tool. Builds a judge prompt
-        from the draft memo + this round's context and calls
-        self.validator_backend.chat() once. Returns the judge's markdown
-        report (or a budget-exhausted notice if the cap is reached).
+        """Handler for the validate_skill tool. Asks the judge about the
+        draft, records its verdict, and tells the reflector what to do
+        next.
 
         The handler is invoked AFTER the harness has already recorded
         this call in self.last_soft_calls["validate_skill"], so the
-        count includes the current call.
+        count includes the current call. If the last allowed call still
+        is not ok and no earlier draft passed, every bullet the judge
+        quoted is deleted from this draft (and its notebook) and the run
+        ends with the rest as the skill.
         """
+        cap = self.max_validate_skill_calls
         n_so_far = len(harness.last_soft_calls.get("validate_skill") or [])
-        if n_so_far > self.max_validate_skill_calls:
+        attempts = context["attempts"]
+        if n_so_far > cap:
+            # Only reachable after an earlier ok: a failed last call ends
+            # the run.
             return (
-                f"validate_skill budget EXHAUSTED "
-                f"({n_so_far}/{self.max_validate_skill_calls}). "
-                "Stop validating and call submit_skill with whatever you "
-                "have. If you still see issues, fix them yourself before "
-                "submitting — the validator will not respond again this "
-                "round."
+                f"validate_skill budget EXHAUSTED ({n_so_far}/{cap}). "
+                "Call submit_skill with exactly the memo that received ok."
             )
 
         memo = str(args.get("memo") or "").strip()
-        if not memo:
-            return (
+        notebook = str(args.get("notebook") or "").strip()
+        if memo:
+            verdict, report = self._judge(
+                memo, notebook, harness=harness, context=context,
+                n_so_far=n_so_far,
+            )
+        else:
+            verdict, report = "empty_memo", (
                 "validate_skill REJECTED: `memo` is empty. Provide your "
                 "draft memo text."
             )
-        notebook = str(args.get("notebook") or "").strip()
+        attempts.append({
+            "call": n_so_far,
+            "verdict": verdict,
+            "memo_key": _memo_key(memo),
+            "report": report,
+        })
 
+        if verdict == "ok":
+            return report + "\nVerdict ok: call submit_skill with exactly this memo."
+        left = cap - n_so_far
+        if left > 0:
+            return report + (
+                f"\nThis draft did not pass (verdict: {verdict}). Revise it "
+                f"and call validate_skill again; {left} of {cap} calls left. "
+                "Only a memo with an ok verdict can be submitted."
+            )
+        if any(a["verdict"] == "ok" for a in attempts):
+            return report + (
+                "\nNo validate_skill calls left. Call submit_skill with "
+                "exactly the memo that received ok."
+            )
+
+        # No draft passed within the cap: cut the bullets the judge
+        # quoted, using its latest readable report.
+        judged = next(
+            (a for a in reversed(attempts) if a["verdict"] == "needs_revision"),
+            None,
+        )
+        quotes = _quoted_evidence(judged["report"]) if judged else []
+        trimmed_memo, removed_memo = _drop_quoted_items(memo, quotes)
+        trimmed_notebook, removed_notebook = _drop_quoted_items(notebook, quotes)
+        context["trimmed"] = {
+            "call": n_so_far,
+            "quotes": quotes,
+            "removed_memo_lines": removed_memo,
+            "removed_notebook_lines": removed_notebook,
+        }
+        finished = {"memo": trimmed_memo, "reason": "validate_skill_cap"}
+        if notebook:
+            finished["notebook"] = trimmed_notebook
+        harness.finished = finished
+        return report + (
+            f"\nNo draft passed in {cap} validate_skill calls. The "
+            f"{len(removed_memo)} memo line(s) containing the judge's "
+            "quotes were deleted and the rest is this round's skill. "
+            "This reflection is finished."
+        )
+
+    def _judge(
+        self,
+        memo: str,
+        notebook: str,
+        *,
+        harness,
+        context: dict,
+        n_so_far: int,
+    ) -> tuple[str, str]:
+        """Call the judge once. Returns ``(verdict, report)`` where
+        verdict is ok, needs_revision, unreadable, error or
+        empty_response."""
         # Latest diagnosis from this run (if any).
         diagnoses = harness.last_soft_calls.get("submit_diagnosis") or []
         latest_diagnosis = diagnoses[-1] if diagnoses else None
@@ -552,24 +674,21 @@ class AgenticIDCReflector:
         try:
             response_text = self.validator_backend.chat(messages) or ""
         except Exception as exc:  # noqa: BLE001
-            return (
+            return "error", (
                 f"validate_skill internal error: {type(exc).__name__}: "
-                f"{exc}. Proceed without this validation — judgement is "
-                "advisory, not required."
+                f"{exc}."
             )
 
         if not response_text.strip():
-            return (
-                "validate_skill returned an empty response. Treat as "
-                "advisory failure: proceed at your discretion."
-            )
+            return "empty_response", "validate_skill returned an empty response."
         # Tag the call number in the response so the reflector can read
         # it back from its own message history when iterating.
-        return (
+        report = (
             f"--- validator response (call "
             f"{n_so_far}/{self.max_validate_skill_calls}) ---\n"
             f"{response_text.strip()}\n"
         )
+        return _parse_verdict(response_text) or "unreadable", report
 
     @staticmethod
     def _extract_round_result_dict(inp: IDCReflectionInput) -> dict[str, Any]:
@@ -700,3 +819,74 @@ def _fmt(value: Any) -> str:
     if isinstance(value, float):
         return f"{value:.4f}"
     return str(value)
+
+
+def _memo_key(text: str) -> str:
+    """Memo text for comparison, ignoring blank lines and edge spaces."""
+    return "\n".join(
+        line.strip() for line in (text or "").splitlines() if line.strip()
+    )
+
+
+_VERDICT_TOKEN = re.compile(r"needs[_ -]?revision|\bok\b", re.IGNORECASE)
+
+
+def _parse_verdict(report: str) -> str:
+    """Return ok or needs_revision from the judge's Verdict section, or
+    an empty string when no verdict can be read."""
+    start = report.lower().rfind("verdict")
+    if start < 0:
+        return ""
+    match = _VERDICT_TOKEN.search(report, start)
+    if match is None:
+        return ""
+    if match.group(0).lower() != "ok":
+        return "needs_revision"
+    if re.search(r"\bnot\s*$", report[start:match.start()], re.IGNORECASE):
+        return "needs_revision"
+    return "ok"
+
+
+_QUOTE = re.compile(r'"([^"\n]+)"|“([^”\n]+)”|`([^`\n]+)`')
+
+
+def _quoted_evidence(report: str) -> list[str]:
+    """Quotes of three or more words from the judge's Issues section."""
+    end = report.lower().rfind("verdict")
+    issues = report[:end] if end >= 0 else report
+    quotes = []
+    for match in _QUOTE.finditer(issues):
+        quote = next(g for g in match.groups() if g is not None).strip()
+        if len(quote.split()) >= 3 and quote not in quotes:
+            quotes.append(quote)
+    return quotes
+
+
+_ITEM_START = re.compile(r"^\s*(?:[-*+•]|\d+[.)]|#+)\s")
+
+
+def _drop_quoted_items(text: str, quotes: list[str]) -> tuple[str, list[str]]:
+    """Delete each bullet of ``text`` (with its wrapped lines) that
+    contains one of the quotes. Returns the kept text and removed lines."""
+    items: list[list[str]] = []
+    for line in (text or "").splitlines():
+        if (not items or not line.strip() or not items[-1][-1].strip()
+                or _ITEM_START.match(line)):
+            items.append([line])
+        else:
+            items[-1].append(line)
+    needles = [_squash(q) for q in quotes]
+    kept: list[str] = []
+    removed: list[str] = []
+    for item in items:
+        body = _squash(" ".join(item))
+        if body and any(n and n in body for n in needles):
+            removed.extend(item)
+        else:
+            kept.extend(item)
+    return "\n".join(kept).strip(), removed
+
+
+def _squash(text: str) -> str:
+    """Lower-case, without markdown emphasis, whitespace collapsed."""
+    return " ".join(text.replace("*", "").replace("`", "").lower().split())

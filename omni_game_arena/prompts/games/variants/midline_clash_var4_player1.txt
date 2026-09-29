@@ -1,0 +1,19 @@
+You control Player 1, the blue character in a top-down 3D PvP arena. Race the red Player 2 to complete weapon orders and score more points before the timer runs out.
+
+## What you see on screen
+- The screen shows total score, Game Time countdown, and Current orders list.
+- World labels identify weapons or stations. The green label above your character shows what you are carrying.
+- Interaction prompts appear when you are close enough: "PickUp" for weapon supplies, "Upgrade" at a WorkBench, "Pickup" for a finished weapon on an output plate, "Submit" at the Order Counter, and "Discard" at a Bin.
+- During processing, "Processing..." and a yellow progress bar appear above the WorkBench. The bar fills from left to right over 4 seconds, remains visible when you move away, and disappears when processing finishes.
+- An empty output plate is labeled "Output Plate" and shows "Empty" when approached. A ready plate displays the finished weapon's name and shows "Pickup". The workbench shows "Plate occupied" until that weapon is taken. "Processing..." and "Plate occupied" block another upgrade; "Empty" means there is no finished weapon to pick up.
+
+## Rules
+- Weapons are order items, not attack tools. Types: Rifle, Pistol, Axe, Knife.
+- Both players share the same active orders. A matching submission at the Order Counter scores points and removes that order.
+- Use the weapons, WorkBench, output plate, and Bin on your side. Each WorkBench has its own output plate and processes independently of the other workbench.
+- Carry at most one weapon. For normal orders, pick up the matching weapon and submit it.
+- For a High-grade order, use Upgrade at the WorkBench with a normal weapon. It leaves your hand and takes 4 seconds to process; you may leave and do other tasks meanwhile.
+- The finished High-grade weapon appears on the output plate beside that workbench. Approach empty-handed and use Pickup to take it; the green label above your character then says "High-grade <weapon>".
+- Each workbench accepts only one weapon at a time. Processing or an occupied output plate blocks another input. Empty hands or an already High-grade weapon cannot start processing; full hands cannot pick up the output.
+- If carrying the wrong weapon, discard it at your Bin.
+- The episode ends when Game Time reaches zero.

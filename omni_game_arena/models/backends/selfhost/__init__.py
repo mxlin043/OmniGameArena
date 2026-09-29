@@ -35,6 +35,7 @@ def resolve(
     enable_thinking: bool | None = None,
     request_timeout: float | None = None,
     max_retries: int | None = None,
+    extra_body: dict | None = None,
     **kwargs: Any,
 ):
     """Build a self-host backend using model-profile defaults when available."""
@@ -48,6 +49,7 @@ def resolve(
 
     if profile is not None:
         base_url = base_url or profile.base_url
+        api_key = api_key or profile.api_key
         request_model = request_model or profile.request_model
         max_tokens = profile.max_tokens if max_tokens is None else max_tokens
         enable_thinking = (
@@ -56,6 +58,7 @@ def resolve(
         request_timeout = (
             profile.request_timeout if request_timeout is None else request_timeout
         )
+        extra_body = extra_body if extra_body is not None else profile.extra_body
 
     return cls(
         model,
@@ -66,6 +69,7 @@ def resolve(
         enable_thinking=enable_thinking,
         request_timeout=request_timeout,
         max_retries=max_retries,
+        extra_body=extra_body,
         **kwargs,
     )
 

@@ -71,7 +71,7 @@ _MOUSE_AXIS_DESCRIPTIONS = {
 class TimedChunkedAction:
     """Incremental runner for one chunked action.
 
-    The normal execute() path blocks until the whole chunk finishes. LCRT
+    The normal execute() path blocks until the whole chunk finishes. LCM
     drives this object phase by phase so another player can start midway.
     """
 
@@ -221,6 +221,9 @@ class KeyboardMouseChunkedAdapter(BaseActionAdapter):
         return {
             "format": "lumine_chunked",
             "key_bindings": key_list,
+            # Machine-readable action vocabulary for non-language policies
+            # such as RandomAgent. The prompt composer ignores this field.
+            "valid_keys": tuple(self.key_bindings.keys()),
             "mouse_controls": mouse_list,
             "mouse_axes": self.mouse_axes,
             "chunk_steps": self.chunk_steps,

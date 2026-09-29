@@ -1,4 +1,0 @@
-extends: vanilla.yaml
-
-output_root: runs/pdq
-clock_mode: pdq

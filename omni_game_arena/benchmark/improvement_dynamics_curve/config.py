@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from omni_game_arena.utils.public_config import public_config
+
 import copy
 import os
 from dataclasses import asdict, dataclass, field
@@ -20,8 +22,8 @@ class IDCConfig:
     params: ParamsPoint
 
     rounds: int = 10
-    episodes_per_round: int = 3
-    official_pdq_root: str = "runs/pdq"
+    episodes_per_round: int = 5
+    official_lfm_root: str = "runs/lfm"
     output_root: str = "runs/idc"
     run_dir: str = ""
 
@@ -32,8 +34,12 @@ class IDCConfig:
     validator_model: str = ""
     validator_temperature: float | None = 0.0
     max_validate_skill_calls: int = 5
-    success_threshold: float = 0.999
-    copy_full_episode: bool = False
+
+    # PvP: the evaluated model is always P1; these frozen profiles are P2.
+    pvp_opponents: list[AgentProfile] = field(default_factory=list)
+    pvp_episodes_per_opponent: int = 1
+    pvp_metric: str = "score"
+    pvp_reflection_view: str = "player1"
 
     live: bool = False
     log_vlm: bool = False
@@ -44,13 +50,13 @@ class IDCConfig:
     def to_json_dict(self) -> dict[str, Any]:
         return {
             "game": self.game_name,
-            "agent": asdict(self.agent_profile),
+            "agent": public_config(self.agent_profile),
             "env": asdict(self.env_spec),
             "params": asdict(self.params),
             "idc": {
                 "rounds": self.rounds,
                 "episodes_per_round": self.episodes_per_round,
-                "official_pdq_root": self.official_pdq_root,
+                "official_lfm_root": self.official_lfm_root,
                 "output_root": self.output_root,
                 "run_dir": self.run_dir,
                 "reflector_model": self.reflector_model,
@@ -60,8 +66,10 @@ class IDCConfig:
                 "validator_model": self.validator_model,
                 "validator_temperature": self.validator_temperature,
                 "max_validate_skill_calls": self.max_validate_skill_calls,
-                "success_threshold": self.success_threshold,
-                "copy_full_episode": self.copy_full_episode,
+                "pvp_opponents": [public_config(opponent) for opponent in self.pvp_opponents],
+                "pvp_episodes_per_opponent": self.pvp_episodes_per_opponent,
+                "pvp_metric": self.pvp_metric,
+                "pvp_reflection_view": self.pvp_reflection_view,
             },
             "output": {
                 "live": self.live,
@@ -92,6 +100,7 @@ def config_from_dict(cfg: dict[str, Any]) -> IDCConfig:
         method=agent_cfg.get("method", "lumine"),
         extra=dict(agent_cfg.get("extra") or {}),
         prompt_skills=list(agent_cfg.get("prompt_skills") or []),
+        game_prompt_key=agent_cfg.get("game_prompt_key") or None,
     )
 
     env_cfg = cfg.get("env") or {}
@@ -117,6 +126,12 @@ def config_from_dict(cfg: dict[str, Any]) -> IDCConfig:
         resize_size=int(params.get("resize_size", 512)),
         hold_duration=float(params.get("hold_duration", 0.2)),
         with_game_prompt=bool(params.get("with_game_prompt", True)),
+        with_controls_prompt=bool(params.get("with_controls_prompt", True)),
+        # IDC explicitly uses skills learned in prior rounds. Keep that
+        # workflow enabled unless its config requests a skill-free ablation.
+        with_skill_prompt=bool(params.get("with_skill_prompt", True)),
+        with_output_format_prompt=bool(params.get("with_output_format_prompt", True)),
+        with_visual_input=bool(params.get("with_visual_input", True)),
         with_reasoning=bool(params.get("with_reasoning", True)),
         obs_delay=params.get("obs_delay"),
         chunk_steps=params.get("chunk_steps"),
@@ -126,14 +141,21 @@ def config_from_dict(cfg: dict[str, Any]) -> IDCConfig:
 
     idc = cfg.get("idc") or {}
     output = cfg.get("output") or {}
+    opponents = []
+    for item in idc.get("pvp_opponents") or []:
+        item = {"model": item} if isinstance(item, str) else item
+        if not isinstance(item, dict) or not item.get("model"):
+            raise ValueError("Each pvp_opponents entry requires a model")
+        opponents.append(AgentProfile(**item))
+    per_opponent = int(idc.get("pvp_episodes_per_opponent", 1))
     return IDCConfig(
         game_name=game_name,
         agent_profile=agent,
         env_spec=env,
         params=params,
         rounds=int(idc.get("rounds", 10)),
-        episodes_per_round=int(idc.get("episodes_per_round", 3)),
-        official_pdq_root=idc.get("official_pdq_root", "runs/pdq"),
+        episodes_per_round=int(idc.get("episodes_per_round", len(opponents) * per_opponent if opponents else 5)),
+        official_lfm_root=idc.get("official_lfm_root", "runs/lfm"),
         output_root=idc.get("output_root", "runs/idc"),
         run_dir=output.get("run_dir") or idc.get("run_dir") or "",
         reflector_model=idc.get("reflector_model") or "",
@@ -143,8 +165,10 @@ def config_from_dict(cfg: dict[str, Any]) -> IDCConfig:
         validator_model=idc.get("validator_model") or "",
         validator_temperature=idc.get("validator_temperature", 0.0),
         max_validate_skill_calls=int(idc.get("max_validate_skill_calls", 5)),
-        success_threshold=float(idc.get("success_threshold", 0.999)),
-        copy_full_episode=bool(idc.get("copy_full_episode", False)),
+        pvp_opponents=opponents,
+        pvp_episodes_per_opponent=per_opponent,
+        pvp_metric=idc.get("pvp_metric", "score"),
+        pvp_reflection_view=idc.get("pvp_reflection_view", "player1"),
         live=bool(output.get("live", False)),
         log_vlm=bool(output.get("log_vlm", False)),
         api_debug=bool(output.get("api_debug", False)),

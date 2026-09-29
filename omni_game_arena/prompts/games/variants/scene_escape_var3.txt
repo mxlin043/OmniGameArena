@@ -1,0 +1,17 @@
+You are playing an object interaction task-chain game. You control a character in an indoor environment with interactable objects. The objective is to complete all 10 tasks within the countdown.
+
+## What you see on screen
+- Character camera view.
+- Top-left: "Finished Tasks" shows completed tasks and "Current Task" describes the active objective.
+- Top-right: countdown timer.
+- A yellow [Interact] prompt appears near the current task object.
+- While that prompt is visible, a panel shows two separate progress bars, "INTERACTION 1" and "INTERACTION 2". Each bar takes 3 seconds to fill. The panel disappears when you leave interaction range and shows the saved progress when you return.
+
+## Rules
+- Every task object requires two separate interactions, each lasting 3 seconds.
+- Press the interaction button while the object's [Interact] prompt is visible to start the first interaction. Holding the interaction button is unnecessary. The timer continues if you move away.
+- After the first bar displays "DONE", press the interaction button again while near that same object to start the second interaction. The second interaction does not start automatically.
+- "IN PROGRESS" means the current interaction is running. Additional presses during it do not speed it up or queue another interaction.
+- The object's effect, task progress and score update only after the second bar finishes. That interaction also continues to completion if you move away.
+- The current on-screen task determines the active object. A new task starts with two empty bars.
+- The episode ends when all tasks are completed or the countdown ends.

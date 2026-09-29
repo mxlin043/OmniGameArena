@@ -117,13 +117,13 @@ class StepRecorder:
             if "act_latency_s" in info_out:
                 info_out["wall_decision_time_s"] = info_out.pop("act_latency_s")
             if "decision_latency_s" in info_out:
-                info_out["lcrt_decision_delay_s"] = info_out.pop("decision_latency_s")
+                info_out["lcm_decision_delay_s"] = info_out.pop("decision_latency_s")
             if "decision_latency_source" in info_out:
-                info_out["lcrt_decision_delay_source"] = info_out.pop(
+                info_out["lcm_decision_delay_source"] = info_out.pop(
                     "decision_latency_source"
                 )
             if "decision_latency_details" in info_out:
-                info_out["lcrt_decision_delay_details"] = info_out.pop(
+                info_out["lcm_decision_delay_details"] = info_out.pop(
                     "decision_latency_details"
                 )
             action_executed = info_out.get("action_executed", True) is not False

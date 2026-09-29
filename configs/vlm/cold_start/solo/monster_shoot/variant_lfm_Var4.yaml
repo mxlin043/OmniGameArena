@@ -1,0 +1,15 @@
+extends: vanilla_lfm.yaml
+
+output_root: runs/lfm_variant/monster_shoot/Var4
+output_root_is_final: true
+
+env:
+  map: monster_shoot_var4
+  task: Eliminate all 10 monsters before time runs out while avoiding their contact attacks.
+
+agents_defaults:
+  game_prompt_key: variants/monster_shoot_var4
+
+params:
+  with_reasoning: true
+  with_skill_prompt: false

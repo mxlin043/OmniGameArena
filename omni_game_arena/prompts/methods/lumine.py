@@ -56,7 +56,7 @@ def _extract_action_content(
     mouse_axes: tuple[str, ...],
 ) -> str | None:
     match = re.search(
-        r'<\|action_start\|[>}](.*?)<\|action_end\|[>}]', text, re.DOTALL
+        r'<\|+action_start\|*[>}](.*?)<\|+action_end\|*[>}]', text, re.DOTALL
     )
     if match is not None:
         return match.group(1).strip()
@@ -101,13 +101,12 @@ def parse_chunked_action(
         return None
     text = f"<|action_start|>{extracted_content}<|action_end|>"
 
-    # Tolerate a common Claude typo where the closing `>` of `<|action_start|>`
-    # is sometimes emitted as `}` (likely token-boundary noise around `|>`).
-    # Once that typo enters the in-episode history the model copies it on
-    # subsequent turns, so a single mis-token cascades into a string of noop
-    # actions. Accept both `>` and `}` to keep the run alive.
+    # Tolerate common Claude tag typos: a missing final pipe
+    # (``<|action_start>``) or ``}`` in place of ``>``. Once a typo enters
+    # history the model may copy it, so accepting both variants prevents a
+    # single malformed tag from cascading into repeated no-op actions.
     match = re.search(
-        r'<\|action_start\|[>}](.*?)<\|action_end\|[>}]', text, re.DOTALL
+        r'<\|+action_start\|*[>}](.*?)<\|+action_end\|*[>}]', text, re.DOTALL
     )
     if match is None:
         # No action tag in the response. Don't fall back to splitting raw
@@ -241,14 +240,21 @@ class LumineStyle(MethodStyle):
         lines.append(f"<|action_start|>{mouse_prefix}{keys}<|action_end|>")
         return "\n".join(lines)
 
-    def render_explanation(self, chunk: int) -> str:
+    def render_explanation(self, chunk: int, tap_keys: tuple[str, ...] = ()) -> str:
         lines = ["Explanation"]
         idx = 1
         mouse_desc = self._render_mouse_description()
         if mouse_desc:
             lines.append(f"{idx}. Mouse Movement: {mouse_desc}")
             idx += 1
-        if chunk > 1:
+        if tap_keys:
+            groups = f"{chunk} groups separated by `;`" if chunk > 1 else "a single group"
+            key_header = (
+                f"Key Sequence: {groups}. Each `k_i` is a key from Available Controls. "
+                "Up to 4 unique keys per group; empty groups are allowed. "
+                "Keys follow the hold and tap rules in Available Controls."
+            )
+        elif chunk > 1:
             key_header = (
                 f"Key Sequence: {chunk} groups separated by `;`. In the "
                 "template above, each `k_i` is a placeholder for any key "
@@ -337,7 +343,7 @@ class LumineStyle(MethodStyle):
         parts = [
             self.render_pacing(chunk, step_ms),
             self.render_action_template(chunk),
-            self.render_explanation(chunk),
+            self.render_explanation(chunk, tuple(action_schema.get("tap_keys") or ())),
         ]
         # Drop empty segments so a subclass returning "" for any render_*
         # doesn't leave a stray blank line in the system prompt.
@@ -374,19 +380,20 @@ class LumineStyle(MethodStyle):
         action tag. Drop the plan and keep only the action tag so the
         packed-history block stays short.
 
-        Same `[>}]` brace tolerance as the main parser regex above: when
-        a past turn typo'd `<|action_start|}`, we still want history
-        compaction to find and keep just the action tag rather than
-        dumping the whole reasoning blob — otherwise the model sees its
-        own broken tag verbatim and replays the typo on the next turn.
+        Uses the same missing-pipe / brace tolerance as the main parser and
+        normalizes matched variants back to canonical tags before inserting
+        them into packed history.
         """
         import re as _re
         match = _re.search(
-            r'<\|action_start\|[>}].*?<\|action_end\|[>}]',
+            r'<\|+action_start\|*[>}](.*?)<\|+action_end\|*[>}]',
             raw_response or "",
             _re.DOTALL,
         )
-        return match.group(0) if match else (raw_response or "").strip()
+        if match:
+            content = match.group(1).strip()
+            return f"<|action_start|>{content}<|action_end|>"
+        return (raw_response or "").strip()
 
 
 SPEC = LumineStyle()  # default: thinking=True, mouse=True, chunk_steps=8

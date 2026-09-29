@@ -8,12 +8,12 @@ Quick start
 -----------
     # Bash / zsh
     python scripts/run_benchmark.py \
-        --config configs/vlm/cold_start/solo/obstacle_run_2d/vanilla_pdq.yaml \
+        --config configs/vlm/cold_start/solo/obstacle_run_2d/vanilla_lfm.yaml \
         --host 127.0.0.1 --port 12345
 
     # PowerShell (backtick line continuation)
     python scripts/run_benchmark.py `
-        --config configs/vlm/cold_start/solo/obstacle_run_2d/vanilla_pdq.yaml `
+        --config configs/vlm/cold_start/solo/obstacle_run_2d/vanilla_lfm.yaml `
         --host 127.0.0.1 --port 12345
 
 Output layout
@@ -47,6 +47,7 @@ from omni_game_arena.benchmark.games import get_game, list_games
 from omni_game_arena.benchmark.logging_utils import setup_root_logger, timestamp_slug
 from omni_game_arena.benchmark.runner import run_benchmark
 from omni_game_arena.benchmark.two_player import run_two_player_benchmark
+from omni_game_arena.clock import CLOCK_MODES, normalize_clock_mode
 
 
 def _override_env(cfg: dict, args: argparse.Namespace) -> dict:
@@ -101,13 +102,17 @@ def _override_players(cfg: dict, models: list | None) -> dict:
 
 def _override_prompt_skills(cfg: dict, args: argparse.Namespace) -> dict:
     """Apply prompt-skill CLI overrides."""
+    if args.no_prompt_skills or args.prompt_skill:
+        cfg["params"] = dict(cfg.get("params") or cfg.get("ablation") or {})
     if args.no_prompt_skills:
         cfg["prompt_skills"] = []
+        cfg["params"]["with_skill_prompt"] = False
     if args.prompt_skill:
         existing = cfg.get("prompt_skills") or []
         if isinstance(existing, str):
             existing = [existing]
         cfg["prompt_skills"] = [*existing, *args.prompt_skill]
+        cfg["params"]["with_skill_prompt"] = True
     return cfg
 
 
@@ -136,7 +141,7 @@ def _apply_overrides(cfg: dict, overrides: list[str] | None) -> dict:
         --set params.chunk_steps=16          # single-value override
         --set params.chunk_steps=[4,8,16]    # sweep values (list)
         --set env.max_steps=50
-        --set episodes_per_cell=3
+        --set episodes_per_cell=5
     """
     for spec in overrides or []:
         if "=" not in spec:
@@ -251,6 +256,7 @@ def _run_solo_suite(cfg: dict, args: argparse.Namespace) -> int:
         game_cfg = _override_env(game_cfg, args)
         game_cfg = _override_prompt_skills(game_cfg, args)
         game_cfg = _apply_overrides(game_cfg, args.overrides)
+        game_cfg["clock_mode"] = normalize_clock_mode(args.clock_mode or game_cfg.get("clock_mode"))
 
         game_name = game_cfg.get("game")
         try:
@@ -307,7 +313,7 @@ def _run_solo_suite(cfg: dict, args: argparse.Namespace) -> int:
         logger.info("Output root  : %s", output_root)
         logger.info("Experiments  : %d", len(experiments))
 
-        clock_mode = args.clock_mode or game_cfg.get("clock_mode") or "realtime"
+        clock_mode = args.clock_mode or game_cfg.get("clock_mode") or "lfm"
         summary = run_benchmark(
             experiments,
             output_root,
@@ -334,7 +340,7 @@ def _run_solo_suite(cfg: dict, args: argparse.Namespace) -> int:
             summary["n_error"],
             summary["n_interrupted"],
         )
-        total_errors += summary["n_error"]
+        total_errors += summary["n_experiments"] - summary["n_ok"]
         if summary["n_interrupted"]:
             break
 
@@ -385,7 +391,7 @@ def main() -> int:
     parser.add_argument("--no-map", action="store_true",
                         help="Skip map switching on reset (use whatever scene UE5 already has loaded)")
     parser.add_argument(
-        "--set", nargs="+", default=None, dest="overrides", metavar="KEY=VALUE",
+        "--set", nargs="+", action="extend", default=None, dest="overrides", metavar="KEY=VALUE",
         help=(
             "Override any config field using a dotted path, e.g. "
             "`--set params.chunk_steps=16 params.obs_delay=0.5 env.max_steps=50`. "
@@ -425,13 +431,14 @@ def main() -> int:
     )
     parser.add_argument(
         "--clock-mode",
-        choices=["realtime", "pdq", "lcrt"],
+        type=normalize_clock_mode,
+        choices=CLOCK_MODES,
         default=None,
         help=(
             "Clock protocol. realtime keeps the simulator running while the "
-            "model thinks. pdq pauses during model inference and resumes only "
-            "for action execution. lcrt is the paused-wallclock, virtual-time "
-            "latency scheduler for two-player benchmarks."
+            "model thinks. lfm pauses during inference. lcm charges only valid "
+            "server-reported inference time before executing actions, using a "
+            "shared clock for two players."
         ),
     )
     parser.add_argument("--log", action="store_true",
@@ -466,17 +473,28 @@ def main() -> int:
             "<output_root>/<agent>/<YYYYMMDD_HHMMSS>/."
         ),
     )
+    parser.add_argument('--checkpoint', help='Opt-in checkpoint JSON for one local Windows LFM VLM episode')
+    parser.add_argument('--resume-checkpoint', action='store_true',
+                        help='Explicitly reconnect to the same live UE and reuse saved history/reply')
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable DEBUG logging")
     args = parser.parse_args()
 
     cfg = load_benchmark_config(args.config)
+    if args.resume_checkpoint and not args.checkpoint:
+        parser.error('--resume-checkpoint requires --checkpoint')
     if cfg.get("games") is not None:
+        if args.checkpoint:
+            parser.error('Checkpointing a multi-game suite is not supported')
         return _run_solo_suite(cfg, args)
 
     cfg = _override_env(cfg, args)
     cfg = _override_players(cfg, args.players)
     cfg = _override_prompt_skills(cfg, args)
     cfg = _apply_overrides(cfg, args.overrides)
+
+    cfg["clock_mode"] = normalize_clock_mode(args.clock_mode or cfg.get("clock_mode"))
+    if args.dry_run:
+        print(f"Clock protocol: {cfg['clock_mode']}")
 
     game_name = cfg.get("game")
     if not game_name:
@@ -514,6 +532,8 @@ def main() -> int:
     )
 
     if game.mode in {"pvp", "coop"}:
+        if args.checkpoint:
+            parser.error('Checkpointing currently supports solo LFM VLM episodes only')
         experiments = expand_two_player_experiments(
             cfg, game.name, game.default_task, game.num_agents,
         )
@@ -551,7 +571,7 @@ def main() -> int:
         logger.info("Output root  : %s", output_root)
         logger.info("Matches      : %d", len(experiments))
 
-        clock_mode = args.clock_mode or cfg.get("clock_mode") or "realtime"
+        clock_mode = args.clock_mode or cfg.get("clock_mode") or "lfm"
         summary = run_two_player_benchmark(
             experiments,
             output_root,
@@ -579,7 +599,7 @@ def main() -> int:
             summary.get("n_skipped", 0),
             summary["n_error"], summary["n_interrupted"],
         )
-        return 0 if summary["n_error"] == 0 else 1
+        return 0 if summary["n_ok"] == summary["n_matches"] else 1
 
     experiments = expand_experiments(cfg, game.name, game.default_task)
     if not experiments:
@@ -611,7 +631,7 @@ def main() -> int:
     logger.info("Output root  : %s", output_root)
     logger.info("Experiments  : %d", len(experiments))
 
-    clock_mode = args.clock_mode or cfg.get("clock_mode") or "realtime"
+    clock_mode = args.clock_mode or cfg.get("clock_mode") or "lfm"
     summary = run_benchmark(
         experiments,
         output_root,
@@ -628,6 +648,8 @@ def main() -> int:
             args.video_thinking_layout,
         ),
         flat_output=_runtime_bool(cfg, args, "flat_output"),
+        checkpoint_path=args.checkpoint,
+        resume_checkpoint=args.resume_checkpoint,
     )
 
     logger.info("-- Summary --")
@@ -646,7 +668,7 @@ def main() -> int:
             agg.get("mean_steps"), agg.get("mean_wall_time_s"),
         )
 
-    return 0 if summary["n_error"] == 0 else 1
+    return 0 if summary["n_ok"] == summary["n_experiments"] else 1
 
 
 if __name__ == "__main__":

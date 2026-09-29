@@ -14,7 +14,8 @@ from .config import IDCConfig
 from .episodes import run_episode_set
 from .io import atomic_write_json, atomic_write_text, load_json, read_text_if_exists, resolve_idc_run_dir
 from .metrics import aggregate_episode_results, compute_curve_metrics
-from .official import stage_round0_from_official_pdq
+from .official import stage_round0_from_official_lfm
+from .pvp import ensure_pvp_protocol, run_pvp_round, validate_pvp_config
 from .reflectors.agentic import AgenticIDCReflector
 from .reflectors.base import IDCReflectionInput
 
@@ -23,6 +24,11 @@ logger = logging.getLogger(__name__)
 
 def run_idc(cfg: IDCConfig) -> dict[str, Any]:
     game = get_game(cfg.game_name)
+    is_pvp = game.mode == "pvp"
+    if is_pvp:
+        validate_pvp_config(cfg)
+    elif cfg.pvp_opponents:
+        raise ValueError("pvp_opponents may only be used for a PvP game")
     if not cfg.env_spec.task:
         cfg.env_spec.task = game.default_task
 
@@ -34,6 +40,8 @@ def run_idc(cfg: IDCConfig) -> dict[str, Any]:
     )
     cfg.run_dir = str(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
+    if is_pvp:
+        ensure_pvp_protocol(run_dir, cfg)
 
     config_path = run_dir / "idc_config.json"
     if not config_path.exists():
@@ -61,15 +69,25 @@ def run_idc(cfg: IDCConfig) -> dict[str, Any]:
             "initializing IDC run",
         )
 
-        _set_live_status(viewer, "IDC | staging round 00 official PDQ traces")
-        round0 = stage_round0_from_official_pdq(
-            pdq_root=cfg.official_pdq_root,
-            game_name=cfg.game_name,
-            model=cfg.agent_profile.model,
-            run_dir=run_dir,
-            success_threshold=cfg.success_threshold,
-            mode=getattr(game, "mode", "solo") or "solo",
-        )
+        if is_pvp:
+            _set_live_status(viewer, "IDC | round 00 fresh P1 cold start vs fixed opponents")
+            round0 = run_pvp_round(
+                cfg=cfg, run_dir=run_dir, round_idx=0, skill_text="",
+                game=game, exp_template=exp_template, viewer=viewer,
+                progress_callback=lambda event: _handle_episode_progress(
+                    viewer=viewer, run_dir=run_dir, cfg=cfg, state=state, event=event,
+                ),
+            )
+        else:
+            _set_live_status(viewer, "IDC | staging round 00 official LFM traces")
+            round0 = stage_round0_from_official_lfm(
+                lfm_root=cfg.official_lfm_root,
+                game_name=cfg.game_name,
+                model=cfg.agent_profile.model,
+                run_dir=run_dir,
+                n_episodes=cfg.episodes_per_round,
+                mode=getattr(game, "mode", "solo") or "solo",
+            )
         _mark_round_state(state, 0, episodes="complete", score="complete")
         _save_state(run_dir, state, "round_00_scored")
         _update_live_progress(
@@ -77,7 +95,7 @@ def run_idc(cfg: IDCConfig) -> dict[str, Any]:
             run_dir,
             cfg,
             state,
-            "round 00 official PDQ traces staged",
+            "round 00 fixed-opponent cold start complete" if is_pvp else "round 00 official LFM traces staged",
         )
 
         _ensure_reflection(
@@ -99,7 +117,18 @@ def run_idc(cfg: IDCConfig) -> dict[str, Any]:
             round_dir.mkdir(parents=True, exist_ok=True)
 
             round_result_path = round_dir / "round_result.json"
-            if round_result_path.exists():
+            if is_pvp:
+                round_result = run_pvp_round(
+                    cfg=cfg, run_dir=run_dir, round_idx=round_idx, skill_text=prev_skill,
+                    game=game, exp_template=exp_template, viewer=viewer,
+                    progress_callback=lambda event: _handle_episode_progress(
+                        viewer=viewer, run_dir=run_dir, cfg=cfg, state=state, event=event,
+                    ),
+                )
+                _mark_round_state(state, round_idx, episodes="complete", score="complete")
+                _save_state(run_dir, state, f"round_{round_idx:02d}_scored")
+                _update_live_progress(viewer, run_dir, cfg, state, f"round {round_idx:02d} fixed opponents complete")
+            elif round_result_path.exists():
                 round_result = load_json(round_result_path)
                 _mark_round_state(state, round_idx, episodes="complete", score="complete")
                 _save_state(run_dir, state, f"round_{round_idx:02d}_scored")
@@ -142,7 +171,7 @@ def run_idc(cfg: IDCConfig) -> dict[str, Any]:
                     game=game,
                     exp_template=exp_template,
                     n_episodes=cfg.episodes_per_round,
-                    clock_mode="pdq",
+                    clock_mode="lfm",
                     live_viewer=viewer,
                     log_vlm=cfg.log_vlm,
                     api_debug=cfg.api_debug,
@@ -156,10 +185,7 @@ def run_idc(cfg: IDCConfig) -> dict[str, Any]:
                         )
                     ),
                 )
-                aggregate = aggregate_episode_results(
-                    episodes,
-                    success_threshold=cfg.success_threshold,
-                )
+                aggregate = aggregate_episode_results(episodes)
                 round_result = {
                     "round_idx": round_idx,
                     "source": "idc_episode_run",
@@ -232,6 +258,7 @@ def _ensure_reflection(
         return read_text_if_exists(skill_out_path)
 
     _mark_round_state(state, round_idx, reflection="running")
+    state.pop("active_opponent", None)
     _save_state(run_dir, state, f"round_{round_idx:02d}_reflecting")
     _set_live_status(viewer, f"IDC | round {round_idx:02d} reflecting", busy=True)
     _update_live_progress(
@@ -246,6 +273,15 @@ def _ensure_reflection(
         round_idx=round_idx,
         round_result=round_result,
     )
+    if cfg.pvp_opponents:
+        aggregate["pvp"] = {
+            "evaluated_player": "player_1",
+            "player_model": cfg.agent_profile.model,
+            "opponents": [p.model for p in cfg.pvp_opponents],
+            "metric": cfg.pvp_metric,
+            "reflection_view": cfg.pvp_reflection_view,
+            "matchups": [ep["pvp"] for ep in round_result["episodes"]],
+        }
     notebook_so_far = read_text_if_exists(run_dir / "notebook.md")
     inp = IDCReflectionInput(
         game_name=cfg.game_name,
@@ -529,6 +565,8 @@ def _handle_episode_progress(
     episode_id = str(event.get("episode_id") or "ep_??")
     completed = int(event.get("completed") or 0)
     n_episodes = int(event.get("n_episodes") or cfg.episodes_per_round)
+    if event.get("opponent_model"):
+        state["active_opponent"] = event["opponent_model"]
 
     if event_name == "episode_start":
         episode_state = f"{completed}/{n_episodes} running {episode_id}"
@@ -544,6 +582,10 @@ def _handle_episode_progress(
     elif event_name == "episode_overwrite_incomplete":
         episode_state = f"{completed}/{n_episodes} cleaning {episode_id}"
         message = f"round {round_idx:02d} overwriting incomplete {episode_id}"
+    elif event_name == "episode_retry_wait":
+        retry = f"{event['retry']}/{event['max_retries']}"
+        episode_state = f"{completed}/{n_episodes} network retry {retry} {episode_id}"
+        message = f"round {round_idx:02d} {episode_id} network failure; replay {retry} in {event['delay_s']}s"
     elif event_name == "episode_failed":
         episode_state = f"{completed}/{n_episodes} failed {episode_id}"
         message = f"round {round_idx:02d} {episode_id} failed"
@@ -594,13 +636,21 @@ def _format_live_progress(
         "",
         "Round status",
     ]
+    if cfg.pvp_opponents:
+        lines[2:2] = [
+            "Role   : evaluated model = P1; fixed cold opponents = P2",
+            f"Metric : P1 {cfg.pvp_metric}",
+            f"P2 now : {state.get('active_opponent', '-')}",
+            "P2 roster (episode order):",
+            *[f"  {i+1}. {p.model}" for i, p in enumerate(cfg.pvp_opponents)],
+        ]
 
     current_round = state.get("current_round")
     rounds_state = state.get("rounds") or {}
     for round_idx in range(0, cfg.rounds + 1):
         item = rounds_state.get(str(round_idx), {})
         marker = ">" if current_round == round_idx else " "
-        label = "R00 official" if round_idx == 0 else f"R{round_idx:02d}"
+        label = ("R00 cold" if cfg.pvp_opponents else "R00 official") if round_idx == 0 else f"R{round_idx:02d}"
         episode_state = item.get("episodes", "pending")
         score_state = item.get("score", "pending")
         reflection_state = item.get(
@@ -687,9 +737,9 @@ def _maybe_start_viewer(cfg: IDCConfig):
     # methods. The single-player LiveViewer does not have them; it would
     # AttributeError mid-episode. Build the right class per game.mode.
     game = get_game(cfg.game_name)
-    is_coop = (getattr(game, "mode", "solo") or "solo") == "coop"
+    is_two_player = (getattr(game, "mode", "solo") or "solo") in {"coop", "pvp"}
 
-    if is_coop:
+    if is_two_player:
         from omni_game_arena.utils.two_player_viewer import TwoPlayerLiveViewer
 
         viewer = TwoPlayerLiveViewer(

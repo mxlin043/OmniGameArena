@@ -1,0 +1,17 @@
+You control Player 1, the blue character in a top-down 3D PvP arena. Race the red Player 2 to complete weapon orders and score more points before the timer runs out.
+
+## What you see on screen
+- The screen shows total score, Game Time countdown, and Current orders list.
+- World labels identify weapons or stations. The green label above your character shows what you are carrying.
+- Interaction prompts ("PickUp", "Upgrade", "Submit", "Discard") appear when you are close enough.
+
+## Rules
+- The two active orders share one 30-second timer measured in game time, starting when the order list is initialized.
+- When either player successfully submits an order, that order is replaced, the other remains, and the shared timer restarts at 30 seconds, even if the replacement is identical.
+- If the shared timer expires, both orders are cleared and a new pair is randomly generated; the timer restarts. The new pair may include the same weapon types as before.
+- Weapons are order items, not attack tools. Types: Rifle, Pistol, Axe, Knife.
+- Both players share the same active orders. A matching submission at the Order Counter scores points and removes that order.
+- Use your own weapons, WorkBench, and Bin.
+- Carry at most one weapon. For normal orders, pick up the matching weapon and submit it. For High-grade orders, upgrade it first until the green label says "High-grade <weapon>".
+- If carrying the wrong weapon, discard it at your Bin.
+- The episode ends when Game Time reaches zero.

@@ -1,12 +1,12 @@
-"""Load and stage Round 0 official PDQ episodes for IDC.
+"""Load and stage Round 0 official LFM episodes for IDC.
 
 Supports two source layouts:
 
   Solo (e.g. obstacle_run_3d, last_stand):
-      pdq/<game>/<model>/<...>/<timestamp>/reflection_trace/
+      lfm/<game>/<model>/<...>/<timestamp>/reflection_trace/
 
   Coop self-cooperation (e.g. shared_floor):
-      pdq/<game>/player1-<model>_vs_player2-<model>/<...>/<timestamp>/
+      lfm/<game>/player1-<model>_vs_player2-<model>/<...>/<timestamp>/
           player_1/reflection_trace/
           player_2/reflection_trace/
 
@@ -28,19 +28,38 @@ from .io import atomic_write_json, load_json
 from .metrics import aggregate_episode_results, score_from_result
 
 
-def stage_round0_from_official_pdq(
+def _require_trace_metadata(trace_dir: Path) -> None:
+    """Reject frame-only backups before spending calls on reflection."""
+    missing = [
+        name for name in ("manifest.json", "steps.jsonl")
+        if not (trace_dir / name).is_file()
+        or (trace_dir / name).stat().st_size == 0
+    ]
+    if missing:
+        raise FileNotFoundError(
+            f"Incomplete reflection_trace at {trace_dir}: missing or empty "
+            f"{', '.join(missing)}. Restore metadata from the original "
+            "summary.json and result.json before starting reflection."
+        )
+
+
+def stage_round0_from_official_lfm(
     *,
-    pdq_root: str | Path,
+    lfm_root: str | Path,
     game_name: str,
     model: str,
     run_dir: str | Path,
-    success_threshold: float,
+    n_episodes: int,
     mode: str = "solo",
 ) -> dict[str, Any]:
     """Copy official ``reflection_trace`` dirs into ``round_00``.
 
     ``mode``: ``"solo"`` (default) or ``"coop"``. Selects which layout to
-    look for under ``pdq_root`` and how to copy per-episode artifacts.
+    look for under ``lfm_root`` and how to copy per-episode artifacts.
+
+    Round 0 is the cold-start score: the earliest ``n_episodes`` completed
+    LFM episodes of this game and model, whatever their scores. Fewer
+    completed episodes is an error.
 
     Only ``reflection_trace/`` is copied. Scores are read from the original
     ``result.json`` and recorded in manifests.
@@ -52,25 +71,44 @@ def stage_round0_from_official_pdq(
     round_result_path = round_dir / "round_result.json"
 
     if manifest_path.exists() and round_result_path.exists():
+        manifest = load_json(manifest_path)
+        for episode in manifest["episodes"]:
+            staged_dir = run_dir / episode["dst"]
+            if manifest.get("mode", mode) == "coop":
+                for player_label in ("player_1", "player_2"):
+                    _require_trace_metadata(staged_dir / player_label / TRACE_DIR_NAME)
+            else:
+                _require_trace_metadata(staged_dir / TRACE_DIR_NAME)
         return load_json(round_result_path)
 
     if mode == "coop":
-        sources = find_official_pdq_episodes_coop(
-            pdq_root=pdq_root,
+        sources = find_official_lfm_episodes_coop(
+            lfm_root=lfm_root,
             game_name=game_name,
             model=model,
         )
     else:
-        sources = find_official_pdq_episodes(
-            pdq_root=pdq_root,
+        sources = find_official_lfm_episodes(
+            lfm_root=lfm_root,
             game_name=game_name,
             model=model,
         )
-    if not sources:
+    if len(sources) < n_episodes:
         raise FileNotFoundError(
-            f"No official PDQ episodes found under {pdq_root}/{game_name}/"
-            f"{model} (mode={mode})"
+            f"Round 0 needs {n_episodes} completed LFM episodes under "
+            f"{lfm_root}/{game_name}/{model} (mode={mode}); found {len(sources)}"
         )
+    sources = sources[:n_episodes]
+
+    # Validate every source before copying any episode or accepting the
+    # baseline. A frames directory alone is not usable by the reflector.
+    for source in sources:
+        source_dirs = (
+            [Path(player["run_dir"]) for player in source["players"]]
+            if mode == "coop" else [Path(source["run_dir"])]
+        )
+        for source_dir in source_dirs:
+            _require_trace_metadata(source_dir / TRACE_DIR_NAME)
 
     episodes = []
     manifest_episodes = []
@@ -124,13 +162,10 @@ def stage_round0_from_official_pdq(
             "copied": copied,
         })
 
-    aggregate = aggregate_episode_results(
-        episodes,
-        success_threshold=success_threshold,
-    )
+    aggregate = aggregate_episode_results(episodes)
     round_result = {
         "round_idx": 0,
-        "source": "official_pdq",
+        "source": "official_lfm",
         "skill_in": "",
         "mode": mode,
         "episodes": episodes,
@@ -138,7 +173,7 @@ def stage_round0_from_official_pdq(
     }
     atomic_write_json(round_result_path, round_result)
     atomic_write_json(manifest_path, {
-        "pdq_root": str(pdq_root),
+        "lfm_root": str(lfm_root),
         "game": game_name,
         "model": model,
         "mode": mode,
@@ -147,13 +182,13 @@ def stage_round0_from_official_pdq(
     return round_result
 
 
-def find_official_pdq_episodes(
+def find_official_lfm_episodes(
     *,
-    pdq_root: str | Path,
+    lfm_root: str | Path,
     game_name: str,
     model: str,
 ) -> list[dict[str, Any]]:
-    root = Path(pdq_root) / game_name / model
+    root = Path(lfm_root) / game_name / model
     if not root.exists():
         return []
     items = []
@@ -173,23 +208,24 @@ def find_official_pdq_episodes(
             "score": score,
             "status": result.get("status"),
         })
-    return sorted(items, key=lambda x: (x["episode_idx"], x["timestamp"]))
+    # Chronological order, so round 0 takes the earliest completed episodes.
+    return sorted(items, key=lambda x: (x["timestamp"], x["episode_idx"]))
 
 
-def find_official_pdq_episodes_coop(
+def find_official_lfm_episodes_coop(
     *,
-    pdq_root: str | Path,
+    lfm_root: str | Path,
     game_name: str,
     model: str,
 ) -> list[dict[str, Any]]:
-    """Find coop self-cooperation PDQ matches.
+    """Find coop self-cooperation LFM matches.
 
-    Looks under ``pdq/<game>/player1-<model>_vs_player2-<model>/`` for
+    Looks under ``lfm/<game>/player1-<model>_vs_player2-<model>/`` for
     timestamp dirs containing ``player_1/result.json`` AND
     ``player_2/result.json``. Each such timestamp dir is one episode; both
     players' run dirs and the (joint) team score are returned together.
     """
-    base = Path(pdq_root) / game_name
+    base = Path(lfm_root) / game_name
     if not base.exists():
         return []
     pair_label = f"player1-{model}_vs_player2-{model}"
@@ -205,6 +241,13 @@ def find_official_pdq_episodes_coop(
         if match_dir in seen_match_dirs:
             continue
         seen_match_dirs.add(match_dir)
+
+        # A scheduler/screenshot failure can leave both player artifacts
+        # marked ok. The overall match status must also permit staging.
+        match_result_path = match_dir / "match_result.json"
+        if match_result_path.exists():
+            if load_json(match_result_path).get("status") != "ok":
+                continue
 
         player2_dir = match_dir / "player_2"
         player2_result = player2_dir / "result.json"
@@ -257,4 +300,5 @@ def find_official_pdq_episodes_coop(
             "player_scores": [own_1, own_2],
             "status": "ok",
         })
-    return sorted(items, key=lambda x: (x["episode_idx"], x["timestamp"]))
+    # Chronological order, so round 0 takes the earliest completed episodes.
+    return sorted(items, key=lambda x: (x["timestamp"], x["episode_idx"]))

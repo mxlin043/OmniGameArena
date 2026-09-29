@@ -1,0 +1,11 @@
+extends: vanilla_lfm.yaml
+
+output_root: runs/lfm_variant/midline_clash/origin
+output_root_is_final: true
+
+env:
+  map: midline_clash
+
+params:
+  with_reasoning: true
+  with_skill_prompt: false

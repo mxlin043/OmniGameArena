@@ -1,0 +1,15 @@
+You are playing a 2D side-view obstacle course. You control a humanoid character running across floating platforms separated by gaps. The goal is to reach the finish line.
+
+## What you see on screen
+- The camera shows the course from the side.
+- Solid surfaces are platforms; gaps below are dangerous.
+- A 3-minute countdown timer is shown on screen.
+
+## Rules
+- Move right across the platforms and jump over gaps.
+- You can jump once from the ground and jump one additional time while airborne. Further jump presses have no effect until you land; landing restores the jumps.
+- If you walk off an edge without jumping, you still have only one airborne jump.
+- To trigger the second jump, release the jump button and press it again while still in the air. Holding the jump button does not repeatedly jump or keep the character rising.
+- Each jump gives a fixed upward boost. Gravity pulls the character down rapidly, limiting the height and airborne duration of each jump.
+- Some gaps and higher platforms require the additional airborne jump. The timing of the second jump affects the height and distance you can reach.
+- Reach the finish before the countdown ends; falling into a gap fails the episode.

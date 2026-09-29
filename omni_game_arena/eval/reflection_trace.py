@@ -21,8 +21,12 @@ TRACE_DIR_NAME = "reflection_trace"
 FRAMES_DIR_NAME = "frames"
 TERMINAL_FRAME_NAME = "terminal_observation.jpg"
 
+# Tolerant of model-side tag typos (a `}` for `>`, or a doubled leading
+# pipe as in `<||action_end|>`). Kept in sync with the regexes in
+# `omni_game_arena.benchmark.runner` and
+# `omni_game_arena.prompts.methods.lumine`.
 _ACTION_TAG_RE = re.compile(
-    r"<\|action_start\|[>}](.*?)<\|action_end\|[>}]", re.DOTALL,
+    r"<\|+action_start\|*[>}](.*?)<\|+action_end\|*[>}]", re.DOTALL,
 )
 
 
@@ -254,7 +258,7 @@ def _base_step(
         "score_delta": score_delta,
         "done": done,
         # Optional: present only when UE5 returned character_position in
-        # get_score. Earlier-recorded episodes (e.g. round 0 PDQ baselines
+        # get_score. Earlier-recorded episodes (e.g. round 0 LFM baselines
         # captured before this feature shipped) will not have this field.
         "position": position,
     }
@@ -284,11 +288,12 @@ def _has_named_scores(source: dict[str, Any]) -> bool:
 
 
 def _add_time_field(step: dict[str, Any], source: dict[str, Any], clock_mode: str | None) -> None:
-    mode = (clock_mode or "realtime").strip().lower()
-    if mode == "pdq":
+    from omni_game_arena.clock import normalize_clock_mode
+    mode = normalize_clock_mode(clock_mode)
+    if mode == "lfm":
         return
-    if mode == "lcrt":
-        value = source.get("lcrt_decision_delay_s", source.get("decision_delay_s"))
+    if mode == "lcm":
+        value = source.get("lcm_decision_delay_s")
         if value is not None:
             step["decision_delay_s"] = value
         return

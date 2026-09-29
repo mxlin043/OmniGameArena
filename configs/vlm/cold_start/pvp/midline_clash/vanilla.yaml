@@ -3,7 +3,7 @@
 # ============================================================================
 
 game: midline_clash
-episodes_per_cell: 1
+episodes_per_cell: 5
 
 env:
   # Shared episode settings. Player-specific host/port live under players.
@@ -25,12 +25,12 @@ players:
   - id: 0
     host: 127.0.0.1
     port: 12345
-    model: gpt-5.5
+    model: claude-opus-4-6
 
   - id: 1
     host: 127.0.0.1
     port: 12346
-    model: claude-opus-4-7
+    model: gpt-5.5
 
 params:
   history_len: 3

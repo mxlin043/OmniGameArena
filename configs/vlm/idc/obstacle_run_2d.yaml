@@ -1,0 +1,41 @@
+game: obstacle_run_2d
+model: claude-opus-4-6
+agent:
+  kind: vlm
+  method: lumine
+  extra: {}
+env:
+  host: 127.0.0.1
+  port: 12345
+  task: ''
+  max_steps: 300
+  screenshot_quality: 85
+  map: obstacle_run_2d
+  obs_delay: 2.0
+params:
+  history_len: 2
+  history_reasoning_len: 0
+  temperature: 0.0
+  resize_size: 0
+  hold_duration: 0.12
+  with_game_prompt: true
+  with_reasoning: true
+  obs_delay: 2.0
+  chunk_steps: 8
+idc:
+  rounds: 10
+  episodes_per_round: 5
+  official_lfm_root: runs/lfm
+  output_root: runs/idc
+  reflector_model: ''
+  reflector_temperature: 0.0
+  reflector_resize_size: 512
+  max_reflection_iterations: 100
+  validator_model: ''
+  validator_temperature: 0.0
+  max_validate_skill_calls: 5
+output:
+  run_dir: ''
+  live: false
+  log_vlm: false
+  api_debug: false

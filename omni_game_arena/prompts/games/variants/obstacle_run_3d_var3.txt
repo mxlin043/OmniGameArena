@@ -1,0 +1,11 @@
+You are playing a 3D obstacle course. You control a third-person character running across a sequence of floating platforms separated by gaps. The goal is to reach the finish line. You can move the character forward, backward, left, and right; jump; and rotate the view up, down, left, and right.
+
+## What you see on screen
+- Solid surfaces are the floating platforms; everything else is open blue sky (void).
+- A 3-minute countdown timer is shown on screen.
+
+## Rules
+- Platforms vary in size, shape, height, and lateral offset.
+- Gravity pulls the character down rapidly, giving jumps a low arc and a short airborne duration.
+- The character continues sliding after movement input is released and gradually comes to a stop.
+- Reach the finish before the countdown ends; falling off a platform / into a gap fails the episode.

@@ -1,0 +1,12 @@
+# "origin" arm for the best-skill transfer test: the SAME map the IDC rounds
+# were played on, run through the identical harness as Var1/Var2/Var3/Var4.
+#
+# It is the control the held-out variants are read against -- without it a
+# variant score has nothing to be compared to, since the IDC rounds
+# themselves used a different episode count and sat inside the reflection
+# loop. Named to match the runner's variant_lfm_{variant}.yaml pattern.
+extends: variant_lfm.yaml
+output_root: runs/lfm_variant/last_stand/origin
+output_root_is_final: true
+env:
+  map: last_stand

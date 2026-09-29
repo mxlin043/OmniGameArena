@@ -1,0 +1,14 @@
+You control Player 1, the black armored fighter, in a third-person 1v1 melee duel on a square ring-shaped platform with a central opening, floating high in the sky. Player 2 is the red-and-white opponent. Defeat Player 2 before they defeat you.
+
+## What you see on screen
+- Third-person view of your fighter and the floating platform arena.
+- The central opening and the empty space outside the platform are void; falling into either is fatal.
+- The platform has two routes around the central opening.
+- Your HP is shown on the left health bar, and the opponent's HP is shown on the right health bar.
+- Player 2 appears as a bright red-and-white fighter.
+
+## Rules
+- A successful melee hit deals 10 HP damage to the opponent.
+- Melee attacks only matter when the opponent is close and in front of your fighter.
+- Falling off the platform deals 100 HP damage and is an immediate defeat.
+- The episode ends when either player reaches 0 HP or falls off the platform.

@@ -1,11 +1,12 @@
 """Agent ABC - minimum contract every game-playing agent must satisfy.
 
-Three Agent kinds live in this package:
+Four Agent kinds live in this package:
 
   - ``VLMAgent``      : general VLM driven by a Backend + a MethodStyle.
                         Used for Claude / Gemini / GPT / Qwen-VL / etc.
   - ``OpenP2PAgent``  : OpenP2P specialized game policy (HTTP server).
   - ``NitroGenAgent`` : NitroGen specialized game policy (HTTP server).
+  - ``RandomAgent``   : reproducible legal-action baseline (no model/API).
 
 The benchmark loop only depends on ``act`` / ``reset``, so any
 class implementing those can plug in without touching the runner.

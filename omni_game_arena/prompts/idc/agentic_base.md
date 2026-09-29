@@ -10,10 +10,10 @@ evaluation of a VLM game agent. Your job, for one round, is:
 
 You drive this yourself. You have read-only tools rooted at this round's
 directory; decide what to look at. Then **before** the final memo, call
-`submit_diagnosis` to enumerate what you intend to change, and finally
-call `submit_skill` with the rewritten memo. The runner injects the memo
-into the next round's player system prompt; no other field of the run is
-changed.
+`submit_diagnosis` to enumerate what you intend to change, get your draft
+memo passed by `validate_skill`, and finally call `submit_skill` with the
+memo that passed. The runner injects the memo into the next round's
+player system prompt; no other field of the run is changed.
 
 ## Mandatory workflow
 
@@ -29,13 +29,15 @@ changed.
    intend to delete; `additions` SHOULD usually be empty or much shorter
    than `deletions`. K=K samples from one round cannot justify new
    prescriptive rules.
-3. **(Optional) Validate.** Draft your memo, then call
-   `validate_skill(memo, notebook?)` to get a separate LLM judge's
-   feedback on whether it follows the discipline rules. Revise and
-   re-validate as needed. **Hard cap: 5 calls per round.** You decide
-   when to stop validating and submit.
-4. **Submit.** Call `submit_skill(memo, notebook?)`. The runner accepts
-   your submission directly — no content checks. This ends the loop.
+3. **Validate.** Draft your memo, then call
+   `validate_skill(memo, notebook?)`. This is **REQUIRED**: a separate LLM
+   judge checks whether the draft follows the discipline rules and returns
+   a verdict. If it is `needs_revision`, revise and validate again. **Hard
+   cap: 5 calls per round.** If the 5th call still is not `ok`, every
+   bullet the judge quoted is deleted from that draft and the rest becomes
+   the skill; the loop ends there.
+4. **Submit.** Call `submit_skill(memo, notebook?)` with exactly the memo
+   that received `ok`. Any other memo is rejected. This ends the loop.
 
 ## Round directory layout
 
@@ -62,7 +64,7 @@ round_NN/
                           the episode subdirectory
   episodes/
     ep_NN/                this round's episodes. For round 0 they may be
-                          named official_ep_NN/ (carried over from PDQ).
+                          named official_ep_NN/ (carried over from LFM).
       reflection_trace/
         manifest.json     episode-level metadata
         steps.jsonl       one JSON per line, each step has fields:
@@ -211,11 +213,10 @@ on this round's matching ep to verify whether the same tilt recurs. The
 notebook turns reflection from "explore from scratch" into "verify and
 extend known facts" — which is the whole point.
 
-## Self-validation via `validate_skill` (optional, capped at 5 calls)
+## Validation via `validate_skill` (required, capped at 5 calls)
 
-`submit_skill` is NOT auto-rejected by content checks. The runner trusts
-your final submission. But you have a tool to **ask a separate LLM
-judge** to review your draft before you commit:
+`submit_skill` accepts only a memo that a **separate LLM judge** has
+passed. Ask the judge to review your draft with:
 
 ```
 validate_skill(memo, notebook?)
@@ -235,19 +236,20 @@ pre-reflection lints) and returns a markdown report with:
 ok | needs_revision
 ```
 
-**You decide when to call it and when to stop.** Typical pattern:
+Workflow:
 
 1. Draft a memo internally.
-2. Call `validate_skill` to get a second opinion.
+2. Call `validate_skill` with it.
 3. If the verdict is `needs_revision`, revise the memo and call again.
-4. If the verdict is `ok` (or the issues are minor and you've made a
-   judgement call), proceed to `submit_skill`.
+4. When the verdict is `ok`, call `submit_skill` with exactly that memo.
+   Blank lines and leading or trailing spaces may differ; any other edit
+   needs a new `validate_skill` call.
 
-**Hard cap: 5 `validate_skill` calls per round.** The 6th and beyond
-return a budget-exhausted notice — at that point you must submit. This
-exists to prevent infinite validation loops; if you're at call 4 and
-issues are still piling up, the right move is usually to make a
-judgement call, NOT to keep validating.
+**Hard cap: 5 `validate_skill` calls per round.** If the 5th call still
+is not `ok`, every bullet the judge quoted in its report is deleted from
+that draft (and from its notebook) and the rest becomes this round's
+skill; the loop ends there. Fix every issue the judge raises before you
+call again rather than spending calls on small tweaks.
 
 The judge checks these semantic rules that text matching can't catch:
 - Map memorization, even paraphrased ("the elevated obstacle near
@@ -259,9 +261,8 @@ The judge checks these semantic rules that text matching can't catch:
 - Lint signal addressing: if MAJOR_REGRESSION fired, did you compress
   rather than add?
 
-`submit_skill` itself does NOT call the validator — it just accepts
-your submission and ends the loop. The validator is your tool to use
-or skip at your discretion.
+`submit_skill` does not call the judge again; it checks that your memo
+is one the judge returned `ok` for.
 
 ## How to read what's there
 
@@ -362,18 +363,18 @@ one earlier round. Default to a *conservative* update:
      K=K round is forbidden by default; only fill this if you have
      cross-round evidence.
    - `referenced_signals`: every HIGH lint signal you're addressing.
-11. **(Optional)** Call `validate_skill(memo, notebook?)` to get a
-   separate LLM judge's feedback on your draft. If verdict is
+11. **Call `validate_skill(memo, notebook?)`. This is REQUIRED.** A
+   separate LLM judge reviews your draft. If the verdict is
    `needs_revision`, revise and re-validate. **Hard cap 5 calls per
-   round** — after that the validator refuses to respond. Skip this
-   step entirely if you're confident in your draft.
-12. Call `submit_skill(memo="...", notebook="...")`:
+   round**; if the 5th call still is not `ok`, the bullets the judge
+   quoted are deleted and the rest becomes the skill.
+12. Call `submit_skill(memo="...", notebook="...")` with exactly the memo
+   that received `ok`:
    - `memo` (required): the complete next-round skill prompt in
      markdown. No tag wrappers.
    - `notebook` (optional): updated observation log if you learned
      anything new this round. Omit if nothing changed.
-   The call ends the loop. The runner does NOT auto-check the memo —
-   it accepts your final submission as-is.
+   The call ends the loop. A memo that did not receive `ok` is rejected.
 
 Be efficient — explore enough to be confident, then submit. There is a
 hard cap on tool-call iterations.

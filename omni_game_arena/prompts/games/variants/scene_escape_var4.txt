@@ -1,0 +1,13 @@
+You are playing an object interaction task-chain game. You control a character in an indoor environment with interactable objects. The objective is to complete the task chain within the countdown.
+
+## What you see on screen
+- Top-left: "Finished Tasks" shows task-chain progress; "Current Task" shows the active objective.
+- Top-right: countdown timer. Interactable objects are placed in the environment.
+- STAMINA shows five units. When empty, RECOVERING shows a countdown and recovery progress bar.
+
+## Rules
+- The current on-screen task determines the active object. Approach it until the yellow [Interact] prompt appears, then press the interaction button. A valid interaction immediately performs its effect and advances the task chain.
+- You start with 5 stamina units. Each press of the interaction button consumes 1 unit, even when no available object is in interaction range.
+- Using the last unit immediately starts a 4-second recovery. During recovery, stamina stays at 0 and interactions are blocked; you can still move and look around.
+- After 4 seconds, all 5 units return at once. Stamina does not refill while any units remain. Press the interaction button again after recovery to interact; inputs during recovery are not queued.
+- The [Interact] prompt disappears outside the object's interaction range. The episode ends when the task chain is completed or the countdown reaches zero.

@@ -3,6 +3,7 @@
 # ============================================================================
 
 game: obstacle_run_3d
+episodes_per_cell: 5
 output_root: runs
 
 env:
@@ -23,9 +24,11 @@ agents:
   - claude-sonnet-4-6
   - gpt-5.5
   - gpt-5.4
-  - gemini-3.1-flash-lite-preview
+  - gemini-3-flash-preview
   - gemini-3.1-pro-preview
   - Kimi-K2.5
+  - qwen3.5-397b-a17b
+  - qwen3.5-122b-a10b
 
 params:
   history_len: 3

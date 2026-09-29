@@ -8,6 +8,7 @@ REM   bash\win\openp2p\run_one.cmd obstacle_run_3d [extra run_benchmark args...]
 if "%~1"=="" goto Usage
 
 set "GAME=%~1"
+set "PYTHON_LAUNCHER=%~dp0..\run_python.cmd"
 cd /d "%~dp0..\..\.."
 
 if not defined IP set "IP=127.0.0.1"
@@ -35,7 +36,7 @@ echo ===== OpenP2P: %GAME% =====
 echo config=%CONFIG%
 echo host=%IP% port=%PORT%
 echo standard=%EPISODES% episode(s), live, log, gameplay video recording
-python scripts\run_benchmark.py ^
+call "%PYTHON_LAUNCHER%" scripts\run_benchmark.py ^
   --config "%CONFIG%" ^
   --host "%IP%" ^
   --port "%PORT%" ^

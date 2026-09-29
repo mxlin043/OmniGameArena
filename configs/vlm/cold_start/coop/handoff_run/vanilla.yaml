@@ -3,7 +3,7 @@
 # ============================================================================
 
 game: handoff_run
-episodes_per_cell: 1
+episodes_per_cell: 5
 
 env:
   # Shared episode settings. Player-specific host/port live under players.

@@ -18,8 +18,8 @@ reason and the reflector must call ``submit_skill`` again. Bounded
 
 Design philosophy
 -----------------
-The previous run (20260523_183435) showed that the reflector's *reasoning*
-is high quality but its *output* drifts. It identifies prescriptive
+Earlier runs showed that the reflector's *reasoning* is high quality
+but its *output* drifts. It identifies prescriptive
 collapse and writes "I should revert to best_skill" in its analysis,
 then submits a 10-bullet memo that keeps map-specific content. Prose
 rules in the system prompt don't bite. Runner-side enforcement does.
@@ -34,8 +34,8 @@ from typing import Any
 # -- Banned phrase patterns ---------------------------------------------
 # Matched case-insensitively against memo + notebook text. These are
 # patterns that strongly indicate map / level memorization, calibrated
-# from real failures in the 20260523_183435 run. Add to this list when
-# new violation patterns surface in production runs.
+# from real failures in earlier runs. Add to this list when new
+# violation patterns surface.
 BANNED_PHRASES: list[tuple[str, str]] = [
     (r"\bhazard[-\s]?(marked|block|markings?)\b", "hazard-marked/block/markings"),
     (r"\byellow[-\s]?(black|striped|markings?)\b", "yellow-black/striped"),
@@ -96,8 +96,8 @@ def compute_pre_signals(
     round_idx = round_result.get("round_idx", 0)
 
     # -- EMPTY_SKILL_DOWNSTREAM ------------------------------------------
-    # Calibration: the gemini-3.1-pro-preview run 20260523_232112 collapsed
-    # to a 30-byte header-only skill from round 3 onwards. Each subsequent
+    # Calibration: an earlier gemini-3.1-pro-preview run collapsed to a
+    # 30-byte header-only skill from round 3 onwards. Each subsequent
     # round inherited an empty skill_in, fired MAJOR_REGRESSION, the
     # validator dutifully enforced "delete only" -> empty memo again ->
     # stuck. This lint breaks the loop by telling the reflector to

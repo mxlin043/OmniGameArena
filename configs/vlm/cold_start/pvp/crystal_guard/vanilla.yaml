@@ -1,7 +1,7 @@
 # CrystalGuard - two-player PvP vanilla config.
 
 game: crystal_guard
-episodes_per_cell: 1
+episodes_per_cell: 5
 
 env:
   # Shared episode settings. Player-specific host/port live under players.
@@ -28,7 +28,7 @@ players:
   - id: 1
     host: 127.0.0.1
     port: 12346
-    model: claude-opus-4-6
+    model: gpt-5.5
 
 params:
   history_len: 3

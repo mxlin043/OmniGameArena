@@ -10,6 +10,7 @@ You control Player 1, the blue character in a top-down 3D cooperative arena. Pla
 - Interaction prompts ("PickUp", "Interact", "Upgrade", "Submit", "Discard") appear on screen when you stand close enough to the relevant item, transfer point, or station.
 
 ## Rules
+- Food supplies are in Player 1's left area; the WorkBench and Order Counter are in Player 2's right area. Player 1 passes food through the transfer points; Player 2 collects it, upgrades it when required, and submits orders.
 - Both players act in the same cooperative arena and work from the same active order list.
 - Transfer points connect the players' areas and hold at most one item at a time.
 - You can carry at most one item at a time.

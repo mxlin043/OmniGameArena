@@ -9,6 +9,7 @@ from typing import Any
 import yaml
 
 from ..profiles import SelfHostModelProfile
+from omni_game_arena.routing import router_path
 
 
 def _repo_root() -> Path:
@@ -16,11 +17,7 @@ def _repo_root() -> Path:
 
 
 def _router_path() -> Path:
-    override = os.getenv("OMNI_ARENA_ROUTER_CONFIG")
-    if override:
-        path = Path(override).expanduser()
-        return path if path.is_absolute() else (_repo_root() / path)
-    return _repo_root() / "configs" / "router.yaml"
+    return router_path(root=_repo_root())
 
 
 def _as_tuple(value: Any) -> tuple[str, ...]:
@@ -38,11 +35,13 @@ def _load_profile(name: str, data: dict[str, Any]) -> SelfHostModelProfile:
     return SelfHostModelProfile(
         aliases=aliases,
         request_model=request_model,
-        base_url=data.get("base_url"),
+        base_url=os.getenv(data.get("base_url_env") or "") or data.get("base_url"),
+        api_key=os.getenv(data.get("api_key_env") or "") or data.get("api_key"),
         engine=str(data.get("engine") or "sglang"),
         max_tokens=int(data.get("max_tokens", 512)),
         enable_thinking=data.get("enable_thinking", True),
         request_timeout=data.get("request_timeout"),
+        extra_body=data.get("extra_body") or None,
     )
 
 
@@ -72,7 +71,11 @@ _BY_ALIAS = {
 
 
 def get_profile(model: str) -> SelfHostModelProfile | None:
-    return _BY_ALIAS.get((model or "").lower())
+    # Resolve environment settings at construction time, including IDC reflector
+    # clients which do not pass through benchmark YAML expansion.
+    name = (model or "").lower()
+    return next((profile for profile in _load_profiles()
+                 if name in {alias.lower() for alias in profile.aliases}), None)
 
 
 __all__ = ["PROFILES", "get_profile"]

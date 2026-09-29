@@ -19,15 +19,15 @@ import requests
 from PIL import Image
 
 from ..base import Backend
-from .router_config import commercial_value
+from ..http_errors import RETRYABLE_HTTP_STATUS as RETRYABLE_STATUS
+from .router_config import commercial_headers, commercial_option, commercial_value
 
 logger = logging.getLogger(__name__)
 
 # Retry policy. Anthropic / proxy gateways will return 429 on rate limit;
 # 5xx on transient server issues; sometimes timeouts mid-stream. The retry
-# count comes from Backend.max_retries. 4xx other than 429 (auth errors,
-# invalid request) are NOT retried - they are permanent.
-RETRYABLE_STATUS = {408, 425, 429, 500, 502, 503, 504}
+# count comes from Backend.max_retries. Authentication, billing and invalid
+# request errors are not retried. All 5xx errors, including 529, are transient.
 INITIAL_BACKOFF_S = 1.0
 MAX_BACKOFF_S = 30.0
 RETRY_AFTER_CAP_S = 60.0
@@ -41,11 +41,7 @@ AVAILABLE_MODELS = [
     "claude-opus-4-6",
 ]
 
-LCRT_LATENCY_POLICY = {
-    "claude-sonnet-4-6": "header.x-amzn-bedrock-invocation-latency",
-    "claude-opus-4-6": "header.x-amzn-bedrock-invocation-latency",
-    "claude-opus-4-7": "header.x-amzn-bedrock-invocation-latency",
-}
+
 
 # Model-name prefixes that reject the deprecated `temperature` param on this
 # endpoint (opus 4.7+ dropped it). Prefix match also covers suffixed variants
@@ -53,23 +49,17 @@ LCRT_LATENCY_POLICY = {
 NO_TEMPERATURE_PREFIXES = ("claude-opus-4-7", "claude-opus-4-8")
 
 
-def _effective_base_url() -> str:
-    return commercial_value("anthropic", "base_url")
+def sends_temperature(model: str) -> bool:
+    """False when this endpoint rejects ``temperature`` for ``model``."""
+    return not model.lower().startswith(NO_TEMPERATURE_PREFIXES)
 
 
-def _effective_api_key() -> str:
-    return commercial_value("anthropic", "api_key")
+def _effective_base_url(model: str | None = None) -> str:
+    return commercial_value("anthropic", "base_url", model=model)
 
 
-# Convenience constants for callers that POST raw HTTP themselves.
-BASE_URL = _effective_base_url()
-API_KEY = _effective_api_key()
-MESSAGES_URL = f"{BASE_URL}/v1/messages"
-HEADERS = {
-    "Authorization": f"Bearer {API_KEY}",
-    "anthropic-version": ANTHROPIC_VERSION,
-    "Content-Type": "application/json",
-}
+def _effective_api_key(model: str | None = None) -> str:
+    return commercial_value("anthropic", "api_key", model=model)
 
 
 class AnthropicBackend(Backend):
@@ -77,18 +67,21 @@ class AnthropicBackend(Backend):
 
     def __init__(self, model: str, **kwargs):
         super().__init__(model, **kwargs)
-        self.base_url = _effective_base_url()
-        self.api_key = _effective_api_key()
-        self.messages_url = f"{self.base_url}/v1/messages"
+        self.base_url = _effective_base_url(model)
+        self.api_key = _effective_api_key(model)
+        self.messages_url = f"{self.base_url.rstrip('/')}/v1/messages"
+        auth_style = commercial_option("anthropic", "auth_style", "bearer", model=model)
+        if auth_style not in {"bearer", "x-api-key"}:
+            raise ValueError(f"Unsupported Anthropic auth_style: {auth_style!r}")
+        auth = ({"x-api-key": self.api_key} if auth_style == "x-api-key"
+                else {"Authorization": f"Bearer {self.api_key}"})
         self.headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            **commercial_headers("anthropic", model=model),
+            **auth,
             "anthropic-version": ANTHROPIC_VERSION,
             "Content-Type": "application/json",
         }
-        _ml = model.lower()
-        self._send_temperature = not any(
-            _ml.startswith(p) for p in NO_TEMPERATURE_PREFIXES
-        )
+        self._send_temperature = sends_temperature(model)
 
     def make_image_content(self, img: Image.Image) -> dict:
         b64 = self.encode_image(img)
@@ -209,6 +202,7 @@ class AnthropicBackend(Backend):
                     "Anthropic exhausted retries on network error (model=%s)",
                     self.model,
                 )
+                self.last_request_error = exc
                 self._debug_record(
                     messages=messages, response=self.last_response_json,
                     latency_s=time.time() - t0, status="net_exhausted",
@@ -236,6 +230,9 @@ class AnthropicBackend(Backend):
                     "Anthropic exhausted retries on HTTP %d (model=%s)",
                     resp.status_code, self.model,
                 )
+                self.last_request_error = requests.HTTPError(
+                    f"Anthropic HTTP {resp.status_code} retries exhausted", response=resp,
+                )
                 self._debug_record(
                     messages=messages, response=self.last_response_json,
                     latency_s=time.time() - t0,
@@ -253,6 +250,9 @@ class AnthropicBackend(Backend):
                 self.last_response_json = {
                     "error": resp.status_code, "text": resp.text,
                 }
+                self.last_request_error = requests.HTTPError(
+                    f"Anthropic HTTP {resp.status_code}", response=resp,
+                )
                 self._debug_record(
                     messages=messages, response=self.last_response_json,
                     latency_s=time.time() - t0,
@@ -275,6 +275,7 @@ class AnthropicBackend(Backend):
                     "Anthropic exhausted retries on JSON decode (model=%s)",
                     self.model,
                 )
+                self.last_request_error = exc
                 self._debug_record(
                     messages=messages,
                     response={"error": "json_decode", "text": resp.text[:1000]},
@@ -293,7 +294,7 @@ class AnthropicBackend(Backend):
             self._debug_record(
                 messages=messages, response=text,
                 latency_s=time.time() - t0,
-                status="ok" if text else "empty",
+                status="ok" if text.strip() else "empty",
                 extra={"attempts": attempt_no, "usage": body.get("usage")},
             )
             return text
@@ -319,19 +320,16 @@ class AnthropicBackend(Backend):
     # so no special handling is needed beyond bypassing _to_payload's
     # default and building the payload inline.
     def _set_latency_from_response(self, headers, body: dict) -> None:
+        from omni_game_arena.clock import finite_nonnegative
+
         raw = headers.get("X-Amzn-Bedrock-Invocation-Latency")
         details = {
-            "policy": LCRT_LATENCY_POLICY.get(
-                self.model.lower(), "header.x-amzn-bedrock-invocation-latency"
-            ),
+            "policy": "server_reported_inference_only",
             "output_tokens": (body.get("usage") or {}).get("output_tokens"),
             "reasoning_tokens": None,
             "header_x_amzn_bedrock_invocation_latency": raw,
         }
-        try:
-            latency_ms = float(raw) if raw is not None else None
-        except (TypeError, ValueError):
-            latency_ms = None
+        latency_ms = finite_nonnegative(raw)
 
         if latency_ms is None:
             self._set_decision_latency(None, source=None, details=details)

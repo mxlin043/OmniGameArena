@@ -1,28 +1,75 @@
-# Central UE map registry for benchmark configs.
-#
-# Benchmark YAMLs should set env.map to one of these keys. The loader resolves
-# the key to the UE package path before opening the map.
+# UE map registry: 12 games, each with Original and Var1–Var4.
+# Use these keys or their full UE package paths in env.map.
 
 maps:
-  cue_chase: /Game/SceneEscape/Maps/Demo_Day
-  scene_escape: /Game/Content/ThirdPerson/Maps/CueChase
-  solo_craft: /game/cookhouse/map/cookhouse_single
-  last_stand: /game/maps/LastStand
-  monster_shoot: /Game/ShootMonster/MonsterShoot
-  obstacle_run_2d: /game/maps/ObstacleRun2D
-  obstacle_run_3d: /Game/Maps/ObstacleRun3D
+  cue_chase: /Game/OmniGameArena/Map/CueChase
+  cue_chase_var1: /Game/OmniGameArena/Map/CueChaseVar1
+  cue_chase_var2: /Game/OmniGameArena/Map/CueChaseVar2
+  cue_chase_var3: /Game/OmniGameArena/Map/CueChaseVar3
+  cue_chase_var4: /Game/OmniGameArena/Map/CueChaseVar4
 
-  shared_floor: /Game/CookHouse/Map/CookHouse_Coop
-  handoff_run: /Game/CookHouse/Map/CookHouse_AsyCoop
+  scene_escape: /Game/OmniGameArena/Map/SceneEscape
+  scene_escape_var1: /Game/OmniGameArena/Map/SceneEscapeVar1
+  scene_escape_var2: /Game/OmniGameArena/Map/SceneEscapeVar2
+  scene_escape_var3: /Game/OmniGameArena/Map/SceneEscapeVar3
+  scene_escape_var4: /Game/OmniGameArena/Map/SceneEscapeVar4
 
-  sky_duel: /Game/FightGame/Maps/FightMap
-  crystal_guard: /Game/BaseAssault/Map/BaseAssault_VS
-  midline_clash: /Game/CookHouse/Map/CookHouse_VS
+  solo_craft: /Game/OmniGameArena/Map/SoloCraft
+  solo_craft_var1: /Game/OmniGameArena/Map/SoloCraftVar1
+  solo_craft_var2: /Game/OmniGameArena/Map/SoloCraftVar2
+  solo_craft_var3: /Game/OmniGameArena/Map/SoloCraftVar3
+  solo_craft_var4: /Game/OmniGameArena/Map/SoloCraftVar4
 
-  last_stand_var1: /Game/Maps/LastStandvar1
-  last_stand_var2: /Game/Maps/LastStandvar2
-  last_stand_var3: /Game/Maps/LastStandvar3
+  last_stand: /Game/OmniGameArena/Map/LastStand
+  last_stand_var1: /Game/OmniGameArena/Map/LastStandVar1
+  last_stand_var2: /Game/OmniGameArena/Map/LastStandVar2
+  last_stand_var3: /Game/OmniGameArena/Map/LastStandVar3
+  last_stand_var4: /Game/OmniGameArena/Map/LastStandVar4
 
-  shared_floor_var1: /Game/CookHouse/Map/cookhouse_coopvar1
-  shared_floor_var2: /Game/CookHouse/Map/cookhouse_coopvar2
-  shared_floor_var3: /Game/CookHouse/Map/cookhouse_coopvar3
+  monster_shoot: /Game/OmniGameArena/Map/MonsterShoot
+  monster_shoot_var1: /Game/OmniGameArena/Map/MonsterShootVar1
+  monster_shoot_var2: /Game/OmniGameArena/Map/MonsterShootVar2
+  monster_shoot_var3: /Game/OmniGameArena/Map/MonsterShootVar3
+  monster_shoot_var4: /Game/OmniGameArena/Map/MonsterShootVar4
+
+  obstacle_run_2d: /Game/OmniGameArena/Map/ObstacleRun2D
+  obstacle_run_2d_var1: /Game/OmniGameArena/Map/ObstacleRun2DVar1
+  obstacle_run_2d_var2: /Game/OmniGameArena/Map/ObstacleRun2DVar2
+  obstacle_run_2d_var3: /Game/OmniGameArena/Map/ObstacleRun2DVar3
+  obstacle_run_2d_var4: /Game/OmniGameArena/Map/ObstacleRun2DVar4
+
+  obstacle_run_3d: /Game/OmniGameArena/Map/ObstacleRun3D
+  obstacle_run_3d_var1: /Game/OmniGameArena/Map/ObstacleRun3DVar1
+  obstacle_run_3d_var2: /Game/OmniGameArena/Map/ObstacleRun3DVar2
+  obstacle_run_3d_var3: /Game/OmniGameArena/Map/ObstacleRun3DVar3
+  obstacle_run_3d_var4: /Game/OmniGameArena/Map/ObstacleRun3DVar4
+
+  shared_floor: /Game/OmniGameArena/Map/SharedFloor
+  shared_floor_var1: /Game/OmniGameArena/Map/SharedFloorVar1
+  shared_floor_var2: /Game/OmniGameArena/Map/SharedFloorVar2
+  shared_floor_var3: /Game/OmniGameArena/Map/SharedFloorVar3
+  shared_floor_var4: /Game/OmniGameArena/Map/SharedFloorVar4
+
+  handoff_run: /Game/OmniGameArena/Map/HandoffRun
+  handoff_run_var1: /Game/OmniGameArena/Map/HandoffRunVar1
+  handoff_run_var2: /Game/OmniGameArena/Map/HandoffRunVar2
+  handoff_run_var3: /Game/OmniGameArena/Map/HandoffRunVar3
+  handoff_run_var4: /Game/OmniGameArena/Map/HandoffRunVar4
+
+  sky_duel: /Game/OmniGameArena/Map/SkyDuel
+  sky_duel_var1: /Game/OmniGameArena/Map/SkyDuelVar1
+  sky_duel_var2: /Game/OmniGameArena/Map/SkyDuelVar2
+  sky_duel_var3: /Game/OmniGameArena/Map/SkyDuelVar3
+  sky_duel_var4: /Game/OmniGameArena/Map/SkyDuelVar4
+
+  crystal_guard: /Game/OmniGameArena/Map/CrystalGuard
+  crystal_guard_var1: /Game/OmniGameArena/Map/CrystalGuardVar1
+  crystal_guard_var2: /Game/OmniGameArena/Map/CrystalGuardVar2
+  crystal_guard_var3: /Game/OmniGameArena/Map/CrystalGuardVar3
+  crystal_guard_var4: /Game/OmniGameArena/Map/CrystalGuardVar4
+
+  midline_clash: /Game/OmniGameArena/Map/MidlineClash
+  midline_clash_var1: /Game/OmniGameArena/Map/MidlineClashVar1
+  midline_clash_var2: /Game/OmniGameArena/Map/MidlineClashVar2
+  midline_clash_var3: /Game/OmniGameArena/Map/MidlineClashVar3
+  midline_clash_var4: /Game/OmniGameArena/Map/MidlineClashVar4

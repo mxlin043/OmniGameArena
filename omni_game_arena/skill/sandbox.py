@@ -29,11 +29,19 @@ class RoundReadOnlyFS:
     MAX_IMAGE_BYTES = 5_000_000       # 5 MB
     MAX_GREP_RESULTS = 200            # lines
 
-    def __init__(self, round_dir: str | Path, previous_skill: str | None = None):
+    def __init__(
+        self, round_dir: str | Path, previous_skill: str | None = None,
+        readable_paths: list[str] | None = None,
+    ):
         self.root: Path = Path(round_dir).resolve()
         if not self.root.exists() or not self.root.is_dir():
             raise ValueError(f"round_dir does not exist or is not a dir: {self.root}")
         self.previous_skill = previous_skill
+        self.readable_paths = None if readable_paths is None else [
+            (self.root / path).resolve() for path in readable_paths
+        ]
+        for path in self.readable_paths or []:
+            path.relative_to(self.root)
 
     # -- path resolution -------------------------------------------------
     def _resolve(self, rel_path: str) -> Path:
@@ -48,6 +56,11 @@ class RoundReadOnlyFS:
             raise PermissionError(
                 f"Path '{rel_path}' escapes the round directory."
             ) from exc
+        if self.readable_paths is not None and not any(
+            candidate == allowed or allowed in candidate.parents or candidate in allowed.parents
+            for allowed in self.readable_paths
+        ):
+            raise PermissionError(f"Path '{rel_path}' is outside the permitted reflection view.")
         return candidate
 
     # -- list_dir --------------------------------------------------------
@@ -63,6 +76,10 @@ class RoundReadOnlyFS:
 
         entries: list[dict] = []
         for child in sorted(target.iterdir(), key=lambda p: (not p.is_dir(), p.name)):
+            try:
+                self._resolve(str(child.relative_to(self.root)))
+            except PermissionError:
+                continue
             entry: dict = {
                 "name": child.name,
                 "type": "dir" if child.is_dir() else "file",
@@ -147,6 +164,10 @@ class RoundReadOnlyFS:
         matches: list[dict] = []
         truncated = False
         for path in sorted(self.root.glob(glob_pattern)):
+            try:
+                self._resolve(str(path.relative_to(self.root)))
+            except (PermissionError, ValueError):
+                continue
             if not path.is_file():
                 continue
             try:

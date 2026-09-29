@@ -1,0 +1,14 @@
+extends: vanilla_lfm.yaml
+
+output_root: runs/lfm_variant/handoff_run/Var1
+output_root_is_final: true
+
+env:
+  map: handoff_run_var1
+
+players_defaults:
+  game_prompt_key: handoff_run_player{player}
+
+params:
+  with_reasoning: true
+  with_skill_prompt: false

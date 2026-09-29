@@ -1,0 +1,8 @@
+extends: vanilla_lfm.yaml
+
+output_root: runs/lfm_variant/obstacle_run_2d/origin
+output_root_is_final: true
+
+params:
+  with_reasoning: true
+  with_skill_prompt: false

@@ -255,9 +255,8 @@ class SoloEnv(BaseEnv):
     def advance_game_time(self, seconds: float, *, pause_after: bool = True):
         """Run UE world for a controlled duration, then optionally pause.
 
-        This is the primitive that LCRT can use later to inject calibrated or
-        fixed reaction delay while still keeping API/network wait outside the
-        simulated game timeline.
+        LCM uses this primitive to charge validated server inference time,
+        keeping API/network waits outside the simulated game timeline.
         """
         if seconds < 0:
             raise ValueError("seconds must be non-negative")
@@ -275,13 +274,16 @@ class SoloEnv(BaseEnv):
         """Alias for ``advance_game_time`` used by latency-control runners."""
         self.advance_game_time(seconds, pause_after=pause_after)
 
-    def close(self):
+    def close(self, *, keep_paused: bool = False):
         """Release held keys and disconnect from UE5."""
         if self.client:
             if hasattr(self.adapter, 'release_all'):
                 self.adapter.release_all(self.client)
             try:
-                self.resume()
+                if keep_paused:
+                    self.pause()
+                else:
+                    self.resume()
             except Exception:
                 pass
             self.client.disconnect()

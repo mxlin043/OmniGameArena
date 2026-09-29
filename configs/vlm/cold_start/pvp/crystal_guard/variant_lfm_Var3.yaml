@@ -1,0 +1,14 @@
+extends: vanilla_lfm.yaml
+
+output_root: runs/lfm_variant/crystal_guard/Var3
+output_root_is_final: true
+
+env:
+  map: crystal_guard_var3
+
+players_defaults:
+  game_prompt_key: variants/crystal_guard_var3_player{player}
+
+params:
+  with_reasoning: true
+  with_skill_prompt: false

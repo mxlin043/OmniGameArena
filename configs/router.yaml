@@ -1,21 +1,42 @@
-# Central endpoint router for OmniGameArena benchmark configs.
-#
-# Values here are merged into agent.extra before an agent is built.
-# Explicit extra values inside a game YAML still override this file.
-#
-# Commercial backend URLs and keys are read directly from commercial.* below.
-
+# Model endpoints. Fill in api_key below, or set the environment variable
+# named by api_key_env; a nonempty environment value wins.
+# Do not commit this file after adding keys.
+commercial:
+  openai:
+    base_url: https://api.openai.com/v1
+    api_key: ''
+    api_mode: chat_completions
+    base_url_env: OPENAI_BASE_URL
+    api_key_env: OPENAI_API_KEY
+    # GPT, Gemini and Kimi all use this OpenAI-compatible route. To send a
+    # model family to its own endpoint, uncomment and fill in an override.
+    # An override replaces the whole route, so give it its own key.
+    # model_overrides:
+    #   gemini-*:
+    #     base_url: https://your-gemini-endpoint/v1
+    #     api_key: ''
+    #     api_mode: chat_completions
+    #   kimi-*:
+    #     base_url: https://your-kimi-endpoint/v1
+    #     api_key: ''
+    #     api_mode: chat_completions
+  anthropic:
+    base_url: https://api.anthropic.com
+    api_key: ''
+    auth_style: x-api-key
+    base_url_env: ANTHROPIC_BASE_URL
+    api_key_env: ANTHROPIC_API_KEY
 policy:
   openp2p:
-    url: <openp2p server ip>:<port>
+    url: http://127.0.0.1:8003
     timeout: 180.0
     health_timeout: 5.0
     skip_reset: true
     image_format: JPEG
     image_quality: 85
-
+    url_env: OPENP2P_URL
   nitrogen:
-    url: <nitrogen server ip>:<port>
+    url: http://127.0.0.1:8002
     timeout: 180.0
     health_timeout: 5.0
     image_format: JPEG
@@ -25,38 +46,34 @@ policy:
     stick_scale: 80.0
     axis_deadzone: 0.001
     invert_y: true
-
+    url_env: NITROGEN_URL
 vlm:
   models:
     qwen3.5-397b-a17b:
       aliases:
-        - qwen3_5_397b_a17b
-        - Qwen3.5-397B-A17B
+      - qwen3_5_397b_a17b
+      - Qwen3.5-397B-A17B
+      - qwen35-397b
       engine: sglang
-      base_url: http://<qwen35_397b ip>:<port>/v1
-      request_model: qwen3.5-397b-a17b
-      max_tokens: 512
+      base_url: http://127.0.0.1:8000/v1
+      api_key: ''
+      request_model: Qwen/Qwen3.5-397B-A17B
+      max_tokens: 8192
       enable_thinking: false
-      request_timeout: 240.0
-
+      request_timeout: 900.0
+      base_url_env: QWEN_397B_BASE_URL
+      api_key_env: QWEN_397B_API_KEY
     qwen3.5-122b-a10b:
       aliases:
-        - qwen3_5_122b_a10b
-        - Qwen3.5-122B-A10B
+      - qwen3_5_122b_a10b
+      - Qwen3.5-122B-A10B
+      - qwen35-122b
       engine: sglang
-      base_url: http://<qwen35_122b ip>:<port>/v1
-      request_model: qwen3.5-122b-a10b
-      max_tokens: 512
+      base_url: http://127.0.0.1:8001/v1
+      api_key: ''
+      request_model: Qwen/Qwen3.5-122B-A10B
+      max_tokens: 3072
       enable_thinking: false
-      request_timeout: 240.0
-
-commercial:
-  # OpenAI-compatible commercial route: GPT, Gemini, Kimi, Hunyuan, etc.
-  openai:
-    base_url: <openai-compatible base url>
-    api_key: <your api key>
-
-  # Anthropic Messages route: Claude family.
-  anthropic:
-    base_url: <anthropic base url>
-    api_key: <your api key>
+      request_timeout: 600.0
+      base_url_env: QWEN_122B_BASE_URL
+      api_key_env: QWEN_122B_API_KEY

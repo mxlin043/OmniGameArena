@@ -1,6 +1,6 @@
 """HandoffRun GameSpec.
 
-Two-player asymmetric cooperative CookHouse map. Player 1 supplies food from
+Two-player asymmetric cooperative map. Player 1 supplies food from
 the left side, and Player 2 receives it through transfer points, upgrades
 when needed, then submits orders on the right side.
 """

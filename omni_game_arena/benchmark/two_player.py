@@ -7,6 +7,8 @@ preserves the real-time evaluation pressure.
 
 from __future__ import annotations
 
+from omni_game_arena.utils.public_config import public_config
+
 import json
 import logging
 import os
@@ -15,8 +17,9 @@ import threading
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from typing import Any
+from omni_game_arena.clock import normalize_clock_mode, decision_latency, LCMLatencyError
 
 from omni_game_arena.env.client_ue5 import UE5Client
 from omni_game_arena.eval.recorder import StepRecorder
@@ -24,8 +27,10 @@ from omni_game_arena.eval.recorder import compact_action
 from omni_game_arena.eval.reflection_trace import write_reflection_trace_from_summary
 from omni_game_arena.eval.video_recorder import VideoRecorder
 from omni_game_arena.models import EmptyModelResponseError
+from omni_game_arena.models.vlm import ModelRequestError
+from omni_game_arena.utils.variant_progress import VariantProgress
 
-from .config import ParamsPoint, EnvSpec, PlayerSpec, TwoPlayerExperiment
+from .config import ParamsPoint, EnvSpec, PlayerSpec, TwoPlayerExperiment, drops_temperature, params_record
 from .factory import build_agent_and_adapter
 from .frame_pack_wrapper import last_stats as _framepack_last_stats
 from .games.base import GameSpec
@@ -35,7 +40,7 @@ from .logging_utils import (
     reserve_timestamped_run_dir,
 )
 from .metrics import compute_episode_metrics
-from .runner import _split_vlm_response, make_solo_env
+from .runner import _split_vlm_response, make_solo_env, _configure_lcm_timing
 
 
 def _logger_for(game: GameSpec) -> logging.Logger:
@@ -102,8 +107,9 @@ class _DecisionResult:
     reason_text: str
     action_text: str
     act_latency_s: float
-    lcrt_decision_delay_s: float
+    lcm_decision_delay_s: float
     ready_at_s: float = 0.0
+    latency_metadata: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -155,12 +161,13 @@ def run_two_player_benchmark(
     )
 
     viewer = None
+    variant_progress = VariantProgress.from_environment(game.name) if live else None
     if live:
         from omni_game_arena.utils.two_player_viewer import TwoPlayerLiveViewer
 
         viewer = TwoPlayerLiveViewer(
             title=f"Omni Game Arena Live - {game.name}",
-            show_progress_panel=False,  # standalone benchmark: no IDC progress panel
+            **(variant_progress.viewer_options() if variant_progress else {}),
         )
         viewer.start()
         logger.info("Two-player live viewer enabled")
@@ -169,6 +176,8 @@ def run_two_player_benchmark(
     try:
         for i, exp in enumerate(experiments, start=1):
             logger.info("----- [%d/%d] %s -----", i, len(experiments), exp.run_id)
+            if variant_progress:
+                variant_progress.update(viewer)
             result = run_two_player_match(
                 exp,
                 output_root,
@@ -186,6 +195,8 @@ def run_two_player_benchmark(
                 flat_output=flat_output,
             )
             results.append(result)
+            if variant_progress:
+                variant_progress.update(viewer, finished=True)
             if result.get("status") == "interrupted":
                 logger.warning(
                     "Benchmark interrupted by user at [%d/%d]", i, len(experiments)
@@ -196,6 +207,12 @@ def run_two_player_benchmark(
             viewer.stop()
 
     return _finalize_summary(results, game)
+
+
+def _append_player_skill(agent, skill_text: str | None) -> None:
+    if skill_text is not None and hasattr(agent, "system_experience"):
+        base = getattr(agent, "system_experience", "") or ""
+        agent.system_experience = "\n\n".join(part for part in (base, skill_text) if part)
 
 
 def run_two_player_match(
@@ -215,6 +232,7 @@ def run_two_player_match(
     flat_output: bool = False,
     run_dir: str | None = None,
     skill_text: str | None = None,
+    skill_text_by_player: dict[int, str] | None = None,
 ) -> dict:
     """Run one asynchronous two-player match.
 
@@ -224,9 +242,22 @@ def run_two_player_match(
     ``skill_text`` is injected into every player agent's
     ``system_experience`` (or analogous skill-prompt field) right after
     construction. None = no injection (vanilla benchmark behavior).
+
+    ``skill_text_by_player`` assigns skills by zero-based player index.
+    Unlisted players receive no skill injection. This is mutually exclusive
+    with the shared ``skill_text`` argument and is used by PvP IDC.
     """
+    if skill_text is not None and skill_text_by_player is not None:
+        raise ValueError("Use either shared skill_text or skill_text_by_player")
+    if skill_text_by_player is not None:
+        unknown = set(skill_text_by_player) - {p.player_index for p in exp.players}
+        if unknown:
+            raise ValueError(f"Skill supplied for unknown player indices: {unknown}")
     clock_mode = _normalize_two_player_clock_mode(clock_mode)
-    params_id = exp.params.short_id()
+    agents = [p.agent for p in exp.players]
+    params_id = exp.params.short_id(
+        temperature_sent=not any(drops_temperature(a) for a in agents)
+    )
     players_slug = _players_slug(exp.players)
     if run_dir is None:
         if flat_output:
@@ -246,7 +277,7 @@ def run_two_player_match(
         "game": exp.game,
         "mode": game.mode,
         "players": [_player_spec_output_dict(p) for p in exp.players],
-        "parameters": asdict(exp.params),
+        "parameters": params_record(exp.params, agents),
         "episode_idx": exp.episode_idx,
         "clock_mode": clock_mode,
         "status": "pending",
@@ -256,6 +287,11 @@ def run_two_player_match(
         "player_results": {},
         "error": None,
     }
+    if skill_text_by_player is not None:
+        result["skill_chars_by_player"] = {
+            _player_result_key(p.player_index): len(skill_text_by_player.get(p.player_index, ""))
+            for p in exp.players
+        }
 
     with ExperimentLogContext(
         run_dir,
@@ -320,6 +356,10 @@ def run_two_player_match(
                             "video_fps": video_fps,
                             "video_with_thinking": video_with_thinking,
                             "video_thinking_layout": video_thinking_layout,
+                            "skill_text": (
+                                skill_text_by_player.get(player.player_index)
+                                if skill_text_by_player is not None else skill_text
+                            ),
                         },
                         name=f"two-player-p{player.player_index}",
                         daemon=True,
@@ -352,6 +392,7 @@ def run_two_player_match(
                     video_with_thinking=video_with_thinking,
                     video_thinking_layout=video_thinking_layout,
                     skill_text=skill_text,
+                    skill_text_by_player=skill_text_by_player,
                 )
         except KeyboardInterrupt:
             stop.request("keyboard_interrupt")
@@ -366,6 +407,8 @@ def run_two_player_match(
             stop.request("match_error")
             result["status"] = "error"
             result["error"] = f"{type(exc).__name__}: {exc}"
+            if isinstance(exc, ModelRequestError):
+                result["request_failure"] = exc.request_failure
             log.error("Match failed: %s\n%s", exc, traceback.format_exc())
         finally:
             alive_after_stop = []
@@ -440,26 +483,7 @@ def run_two_player_match(
 
 
 def _normalize_two_player_clock_mode(clock_mode: str) -> str:
-    mode = (clock_mode or "realtime").strip().lower()
-    aliases = {
-        "rt": "realtime",
-        "real-time": "realtime",
-        "real_time": "realtime",
-        "paused": "pdq",
-        "pause": "pdq",
-        "paused_decision_quality": "pdq",
-        "latency_controlled": "lcrt",
-        "latency-controlled": "lcrt",
-        "latency_controlled_real_time": "lcrt",
-    }
-    mode = aliases.get(mode, mode)
-    if mode not in {"realtime", "pdq", "lcrt"}:
-        raise ValueError(
-            f"Unsupported two-player clock mode {clock_mode!r}; "
-            "expected 'realtime', 'pdq', or 'lcrt'"
-        )
-    return mode
-
+    return normalize_clock_mode(clock_mode)
 
 def _viewer_player_label(player_index: int) -> str:
     return f"player {player_index + 1}"
@@ -494,7 +518,7 @@ def _player_slug_part(player: PlayerSpec) -> str:
 
 
 def _player_spec_output_dict(player: PlayerSpec) -> dict:
-    data = asdict(player)
+    data = public_config(player)
     internal_index = player.player_index
     data["ue_player_index"] = internal_index
     data["player_index"] = _player_display_id(internal_index)
@@ -626,8 +650,10 @@ def _run_paused_two_player_match(
     video_with_thinking: bool,
     video_thinking_layout: str,
     skill_text: str | None = None,
+    skill_text_by_player: dict[int, str] | None = None,
 ) -> None:
-    """Run PDQ or LCRT with the UE world paused during model calls."""
+    """Run LFM or LCM with the UE world paused during model calls."""
+    clock_mode = normalize_clock_mode(clock_mode)
     runtimes: dict[int, _PausedPlayerRuntime] = {}
     try:
         for player in exp.players:
@@ -638,8 +664,11 @@ def _run_paused_two_player_match(
             agent, adapter = build_agent_and_adapter(
                 player.agent, exp.params, game, player_index=pid,
             )
-            if skill_text is not None and hasattr(agent, "system_experience"):
-                agent.system_experience = skill_text
+            _configure_lcm_timing(agent, clock_mode == "lcm", log)
+            _append_player_skill(
+                agent,
+                skill_text_by_player.get(pid) if skill_text_by_player is not None else skill_text,
+            )
             if api_debug:
                 _attach_api_debug(agent, state.player_dir, log, pid)
 
@@ -707,8 +736,8 @@ def _run_paused_two_player_match(
 
         _pause_all(runtimes.values())
         log.info("Paused two-player scheduler start | clock_mode=%s", clock_mode)
-        if clock_mode == "pdq":
-            _run_pdq_scheduler(
+        if clock_mode == "lfm":
+            _run_lfm_scheduler(
                 runtimes=runtimes,
                 exp=exp,
                 game=game,
@@ -721,8 +750,8 @@ def _run_paused_two_player_match(
                 log_vlm=log_vlm,
                 live_vlm_only=live_vlm_only,
             )
-        elif clock_mode == "lcrt":
-            _run_lcrt_scheduler(
+        elif clock_mode == "lcm":
+            _run_lcm_scheduler(
                 runtimes=runtimes,
                 exp=exp,
                 game=game,
@@ -737,6 +766,14 @@ def _run_paused_two_player_match(
             )
         else:
             raise ValueError(f"Unexpected paused clock mode: {clock_mode}")
+    except LCMLatencyError as exc:
+        stop.request("lcm_timing_unavailable")
+        for runtime in runtimes.values():
+            if runtime.status == "pending":
+                runtime.status = "error"
+                runtime.error = f"LCMLatencyError: {exc}"
+                runtime.terminal_info = {"done_reason": "lcm_timing_unavailable", "error": runtime.error}
+        raise
     except EmptyModelResponseError:
         skipped_pid = next(
             (
@@ -792,7 +829,7 @@ def _run_paused_two_player_match(
             )
 
 
-def _run_pdq_scheduler(
+def _run_lfm_scheduler(
     *,
     runtimes: dict[int, _PausedPlayerRuntime],
     exp: TwoPlayerExperiment,
@@ -806,7 +843,7 @@ def _run_pdq_scheduler(
     log_vlm: bool,
     live_vlm_only: bool,
 ) -> None:
-    """Paused Decision Quality: lockstep decisions, simultaneous actions."""
+    """Latency-free mode: lockstep decisions, simultaneous actions."""
     virtual_t = 0.0
     while not stop.event.is_set():
         active = [rt for rt in runtimes.values() if rt.status == "pending"]
@@ -816,7 +853,7 @@ def _run_pdq_scheduler(
         decisions = _request_decisions_parallel(
             active,
             virtual_t=virtual_t,
-            clock_mode="pdq",
+            clock_mode="lfm",
             events=events,
             events_lock=events_lock,
             match_start=match_start,
@@ -832,7 +869,7 @@ def _run_pdq_scheduler(
             runtimes=runtimes,
             decisions=list(decisions.values()),
             virtual_t=virtual_t,
-            clock_mode="pdq",
+            clock_mode="lfm",
             exp=exp,
             game=game,
             stop=stop,
@@ -846,7 +883,7 @@ def _run_pdq_scheduler(
         virtual_t = round(virtual_t + game_dt, 6)
 
 
-def _run_lcrt_scheduler(
+def _run_lcm_scheduler(
     *,
     runtimes: dict[int, _PausedPlayerRuntime],
     exp: TwoPlayerExperiment,
@@ -860,13 +897,13 @@ def _run_lcrt_scheduler(
     log_vlm: bool,
     live_vlm_only: bool,
 ) -> None:
-    """Latency-Controlled Real-Time using interruptible action chunks."""
+    """Latency-charged mode using interruptible action chunks."""
     if not _all_runtimes_support_timed_actions(runtimes):
         log.warning(
-            "LCRT timed action support is unavailable for at least one adapter; "
-            "falling back to blocking LCRT execution."
+            "LCM timed action support is unavailable for at least one adapter; "
+            "using blocking action execution with the same strict timing contract."
         )
-        _run_lcrt_scheduler_blocking(
+        _run_lcm_scheduler_blocking(
             runtimes=runtimes,
             exp=exp,
             game=game,
@@ -881,7 +918,7 @@ def _run_lcrt_scheduler(
         )
         return
 
-    _run_lcrt_scheduler_strict(
+    _run_lcm_scheduler_strict(
         runtimes=runtimes,
         exp=exp,
         game=game,
@@ -905,7 +942,7 @@ def _all_runtimes_support_timed_actions(
     )
 
 
-def _run_lcrt_scheduler_strict(
+def _run_lcm_scheduler_strict(
     *,
     runtimes: dict[int, _PausedPlayerRuntime],
     exp: TwoPlayerExperiment,
@@ -919,7 +956,7 @@ def _run_lcrt_scheduler_strict(
     log_vlm: bool,
     live_vlm_only: bool,
 ) -> None:
-    """Strict LCRT: start each ready action on the shared virtual timeline."""
+    """LCM: start each ready action on the shared virtual timeline."""
     virtual_t = 0.0
     serial = 0
     pending: dict[int, _DecisionResult] = {}
@@ -936,7 +973,7 @@ def _run_lcrt_scheduler_strict(
     initial = _request_decisions_parallel(
         list(runtimes.values()),
         virtual_t=virtual_t,
-        clock_mode="lcrt",
+        clock_mode="lcm",
         events=events,
         events_lock=events_lock,
         match_start=match_start,
@@ -950,7 +987,7 @@ def _run_lcrt_scheduler_strict(
 
     try:
         while (pending or active) and not stop.event.is_set():
-            new_decisions = _process_due_lcrt_action_events(
+            new_decisions = _process_due_lcm_action_events(
                 active=active,
                 runtimes=runtimes,
                 virtual_t=virtual_t,
@@ -970,7 +1007,7 @@ def _run_lcrt_scheduler_strict(
             if stop.event.is_set():
                 break
 
-            if _has_ready_lcrt_decision(heap, pending, virtual_t):
+            if _has_ready_lcm_decision(heap, pending, virtual_t):
                 _poll_all_runtimes(
                     runtimes=runtimes,
                     virtual_t=virtual_t,
@@ -980,7 +1017,7 @@ def _run_lcrt_scheduler_strict(
                 )
                 if stop.event.is_set():
                     break
-                _start_ready_lcrt_actions(
+                _start_ready_lcm_actions(
                     active=active,
                     pending=pending,
                     heap=heap,
@@ -994,7 +1031,7 @@ def _run_lcrt_scheduler_strict(
                 )
                 continue
 
-            next_t = _next_lcrt_event_time(active, heap, pending)
+            next_t = _next_lcm_event_time(active, heap, pending)
             if next_t is None:
                 break
             if next_t <= virtual_t + 1e-6:
@@ -1016,7 +1053,7 @@ def _run_lcrt_scheduler_strict(
                     )
 
 
-def _clean_lcrt_heap(
+def _clean_lcm_heap(
     heap: list[tuple[float, int, int]],
     pending: dict[int, _DecisionResult],
 ) -> None:
@@ -1028,21 +1065,21 @@ def _clean_lcrt_heap(
         heapq.heappop(heap)
 
 
-def _has_ready_lcrt_decision(
+def _has_ready_lcm_decision(
     heap: list[tuple[float, int, int]],
     pending: dict[int, _DecisionResult],
     virtual_t: float,
 ) -> bool:
-    _clean_lcrt_heap(heap, pending)
+    _clean_lcm_heap(heap, pending)
     return bool(heap and heap[0][0] <= virtual_t + 1e-6)
 
 
-def _next_lcrt_event_time(
+def _next_lcm_event_time(
     active: dict[int, _ActiveTimedAction],
     heap: list[tuple[float, int, int]],
     pending: dict[int, _DecisionResult],
 ) -> float | None:
-    _clean_lcrt_heap(heap, pending)
+    _clean_lcm_heap(heap, pending)
     times: list[float] = []
     if heap:
         times.append(heap[0][0])
@@ -1052,7 +1089,7 @@ def _next_lcrt_event_time(
     return min(times)
 
 
-def _start_ready_lcrt_actions(
+def _start_ready_lcm_actions(
     *,
     active: dict[int, _ActiveTimedAction],
     pending: dict[int, _DecisionResult],
@@ -1065,7 +1102,7 @@ def _start_ready_lcrt_actions(
     log: logging.Logger,
     stop: _StopController,
 ) -> None:
-    while _has_ready_lcrt_decision(heap, pending, virtual_t):
+    while _has_ready_lcm_decision(heap, pending, virtual_t):
         ready_at, _seq, pid = heapq.heappop(heap)
         decision = pending.pop(pid, None)
         if decision is None or decision.ready_at_s != ready_at:
@@ -1084,7 +1121,7 @@ def _start_ready_lcrt_actions(
                 "event": "action_start",
                 "player_index": pid,
                 "step": decision.step,
-                "clock_mode": "lcrt",
+                "clock_mode": "lcm",
                 "virtual_t_s": round(virtual_t, 4),
                 "ready_at_s": round(decision.ready_at_s, 4),
                 "action": compact_action(decision.action),
@@ -1122,12 +1159,12 @@ def _start_ready_lcrt_actions(
             next_event_at_s=round(virtual_t + max(0.0, delay_s), 6),
         )
         log.info(
-            "player=%s action start clock=lcrt step=%d vtime=%.2f ready_at=%.2f",
+            "player=%s action start clock=lcm step=%d vtime=%.2f ready_at=%.2f",
             pid, decision.step, virtual_t, decision.ready_at_s,
         )
 
 
-def _process_due_lcrt_action_events(
+def _process_due_lcm_action_events(
     *,
     active: dict[int, _ActiveTimedAction],
     runtimes: dict[int, _PausedPlayerRuntime],
@@ -1165,7 +1202,7 @@ def _process_due_lcrt_action_events(
                 continue
             if active_action.phase == "observe":
                 active.pop(pid, None)
-                new_decision = _finish_lcrt_timed_action(
+                new_decision = _finish_lcm_timed_action(
                     active_action=active_action,
                     runtime=runtimes[pid],
                     virtual_t=virtual_t,
@@ -1213,7 +1250,7 @@ def _process_due_lcrt_action_events(
                     continue
 
                 active.pop(pid, None)
-                new_decision = _finish_lcrt_timed_action(
+                new_decision = _finish_lcm_timed_action(
                     active_action=active_action,
                     runtime=runtimes[pid],
                     virtual_t=virtual_t,
@@ -1239,7 +1276,7 @@ def _process_due_lcrt_action_events(
     return new_decisions
 
 
-def _finish_lcrt_timed_action(
+def _finish_lcm_timed_action(
     *,
     active_action: _ActiveTimedAction,
     runtime: _PausedPlayerRuntime,
@@ -1262,7 +1299,7 @@ def _finish_lcrt_timed_action(
         decision=decision,
         virtual_t=virtual_t,
         action_game_time_s=action_game_time_s,
-        clock_mode="lcrt",
+        clock_mode="lcm",
         exp=exp,
     )
     runtime.obs = obs
@@ -1288,9 +1325,10 @@ def _finish_lcrt_timed_action(
             "event": "step",
             "player_index": decision.player_index,
             "step": decision.step,
-            "clock_mode": "lcrt",
+            "clock_mode": "lcm",
             "virtual_t_s": round(virtual_t, 4),
-            "lcrt_decision_delay_s": round(decision.lcrt_decision_delay_s, 4),
+            "lcm_decision_delay_s": round(decision.lcm_decision_delay_s, 4),
+            **decision.latency_metadata,
             "action_game_time_s": round(action_game_time_s, 4),
             "action": compact_action(decision.action),
             "score": info.get("score"),
@@ -1313,7 +1351,7 @@ def _finish_lcrt_timed_action(
             ),
         )
     log.info(
-        "player=%s step=%d clock=lcrt vtime=%.2f done=%s reason=%s",
+        "player=%s step=%d clock=lcm vtime=%.2f done=%s reason=%s",
         decision.player_index, decision.step, virtual_t, done, info.get("done_reason"),
     )
 
@@ -1335,7 +1373,7 @@ def _finish_lcrt_timed_action(
     return _request_decision(
         runtime,
         virtual_t=virtual_t,
-        clock_mode="lcrt",
+        clock_mode="lcm",
         events=events,
         events_lock=events_lock,
         match_start=match_start,
@@ -1346,7 +1384,7 @@ def _finish_lcrt_timed_action(
     )
 
 
-def _run_lcrt_scheduler_blocking(
+def _run_lcm_scheduler_blocking(
     *,
     runtimes: dict[int, _PausedPlayerRuntime],
     exp: TwoPlayerExperiment,
@@ -1360,7 +1398,7 @@ def _run_lcrt_scheduler_blocking(
     log_vlm: bool,
     live_vlm_only: bool,
 ) -> None:
-    """Latency-Controlled Real-Time using per-call dynamic decision delays."""
+    """LCM using server inference delays with blocking action execution."""
     virtual_t = 0.0
     serial = 0
     pending: dict[int, _DecisionResult] = {}
@@ -1369,7 +1407,7 @@ def _run_lcrt_scheduler_blocking(
     initial = _request_decisions_parallel(
         list(runtimes.values()),
         virtual_t=virtual_t,
-        clock_mode="lcrt",
+        clock_mode="lcm",
         events=events,
         events_lock=events_lock,
         match_start=match_start,
@@ -1417,7 +1455,7 @@ def _run_lcrt_scheduler_blocking(
             runtimes=runtimes,
             decisions=group,
             virtual_t=virtual_t,
-            clock_mode="lcrt",
+            clock_mode="lcm",
             exp=exp,
             game=game,
             stop=stop,
@@ -1446,7 +1484,7 @@ def _run_lcrt_scheduler_blocking(
             new_decision = _request_decision(
                 runtime,
                 virtual_t=virtual_t,
-                clock_mode="lcrt",
+                clock_mode="lcm",
                 events=events,
                 events_lock=events_lock,
                 match_start=match_start,
@@ -1554,7 +1592,7 @@ def _request_decision(
     act_latency = time.perf_counter() - t_act
     raw_response = getattr(runtime.agent, "last_vlm_response", None) or None
     reason_text, action_text = _split_vlm_response(raw_response or "")
-    lcrt_decision_delay = _estimate_decision_latency(
+    lcm_decision_delay, latency_metadata = _estimate_decision_latency(
         runtime=runtime,
         action=action,
         raw_response=raw_response,
@@ -1570,8 +1608,9 @@ def _request_decision(
         reason_text=reason_text,
         action_text=action_text,
         act_latency_s=act_latency,
-        lcrt_decision_delay_s=lcrt_decision_delay,
-        ready_at_s=round(virtual_t + lcrt_decision_delay, 6),
+        lcm_decision_delay_s=lcm_decision_delay,
+        ready_at_s=round(virtual_t + lcm_decision_delay, 6),
+        latency_metadata=latency_metadata,
     )
     _append_event(
         events, events_lock, match_start,
@@ -1581,7 +1620,8 @@ def _request_decision(
             "step": decision_step,
             "clock_mode": clock_mode,
             "virtual_t_s": round(virtual_t, 4),
-            "lcrt_decision_delay_s": round(lcrt_decision_delay, 4),
+            "lcm_decision_delay_s": round(lcm_decision_delay, 4),
+            **latency_metadata,
             "ready_at_s": round(decision.ready_at_s, 4),
         },
     )
@@ -1594,12 +1634,12 @@ def _request_decision(
             action=action_text,
             status=(
                 f"{_viewer_player_label(pid)} decision step={decision_step} "
-                f"delay={lcrt_decision_delay:.2f}s"
+                f"delay={lcm_decision_delay:.2f}s"
             ),
         )
     log.info(
-        "player=%s decision step=%d wall_decision_time=%.2fs lcrt_decision_delay=%.2fs ready_at=%.2f",
-        pid, decision_step, act_latency, lcrt_decision_delay, decision.ready_at_s,
+        "player=%s decision step=%d wall_decision_time=%.2fs lcm_decision_delay=%.2fs ready_at=%.2f",
+        pid, decision_step, act_latency, lcm_decision_delay, decision.ready_at_s,
     )
     if log_vlm and raw_response:
         print(
@@ -1611,29 +1651,10 @@ def _request_decision(
 
 
 def _estimate_decision_latency(
-    *,
-    runtime: _PausedPlayerRuntime,
-    action: dict,
-    raw_response: str | None,
-    act_latency_s: float,
-    clock_mode: str,
-) -> float:
-    """Return per-call LCRT delay. This hook is intentionally replaceable."""
-    if clock_mode == "pdq":
-        return 0.0
-    for source in (runtime.agent, getattr(runtime.agent, "backend", None)):
-        if source is None:
-            continue
-        for attr in ("last_decision_latency_s", "decision_latency_s"):
-            value = getattr(source, attr, None)
-            if value is None:
-                continue
-            try:
-                return max(0.0, float(value))
-            except (TypeError, ValueError):
-                continue
-    return max(0.0, float(act_latency_s))
-
+    *, runtime: _PausedPlayerRuntime, action: dict, raw_response: str | None,
+    act_latency_s: float, clock_mode: str,
+) -> tuple[float, dict]:
+    return decision_latency(runtime.agent, clock_mode)
 
 def _execute_decision_group(
     *,
@@ -1732,7 +1753,8 @@ def _execute_decision_group(
                 "step": decision.step,
                 "clock_mode": clock_mode,
                 "virtual_t_s": round(virtual_t + game_dt, 4),
-                "lcrt_decision_delay_s": round(decision.lcrt_decision_delay_s, 4),
+                "lcm_decision_delay_s": round(decision.lcm_decision_delay_s, 4),
+                **decision.latency_metadata,
                 "action_game_time_s": round(game_dt, 4),
                 "action": compact_action(decision.action),
                 "score": info.get("score"),
@@ -1747,7 +1769,7 @@ def _execute_decision_group(
                 else ""
             )
             # The decision text is appended when the model response arrives.
-            # After execution, only refresh the status bar; otherwise PDQ
+            # After execution, only refresh the status bar; otherwise LFM
             # shows each logical step twice in the live viewer.
             viewer.update_player(
                 decision.player_index,
@@ -1837,7 +1859,8 @@ def _finish_paused_action_step(
         "clock_mode": clock_mode,
         "virtual_time_s": round(virtual_t, 6),
         "ready_at_s": decision.ready_at_s,
-        "lcrt_decision_delay_s": round(decision.lcrt_decision_delay_s, 6),
+        "lcm_decision_delay_s": round(decision.lcm_decision_delay_s, 6),
+        **decision.latency_metadata,
         "act_latency_s": round(decision.act_latency_s, 6),
         "action_game_time_s": round(action_game_time_s, 6),
     }
@@ -1897,7 +1920,7 @@ def _poll_all_runtimes(
                 "score": client.score,
                 "survival_time": client.survival_time,
                 "max_score_seen": runtime.env.max_score_seen,
-                "clock_mode": "lcrt",
+                "clock_mode": "lcm",
                 "virtual_time_s": round(virtual_t, 6),
                 "terminal_timing": "between_actions",
             }
@@ -1959,6 +1982,7 @@ def _run_player_loop(
     video_fps: int,
     video_with_thinking: bool,
     video_thinking_layout: str,
+    skill_text: str | None = None,
 ) -> None:
     pid = player.player_index
     recorder = state.recorder
@@ -1978,6 +2002,7 @@ def _run_player_loop(
         agent, adapter = build_agent_and_adapter(
             player.agent, exp.params, game, player_index=pid,
         )
+        _append_player_skill(agent, skill_text)
         env = make_solo_env(
             _env_for_player(exp.env, player),
             exp.params,
@@ -2438,7 +2463,7 @@ def _player_result_file_dict(
     result = dict(player_result)
     result["game"] = game.name
     result["mode"] = game.mode
-    result["agent"] = asdict(player.agent)
+    result["agent"] = public_config(player.agent)
     result["player"] = _player_spec_output_dict(player)
     return result
 

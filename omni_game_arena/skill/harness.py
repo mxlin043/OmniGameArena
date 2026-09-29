@@ -60,6 +60,7 @@ class AnalyzerHarness:
         require_diagnosis_before_skill: bool = False,
         soft_tools: tuple[str, ...] | None = None,
         tool_handlers: dict | None = None,
+        readable_paths: list[str] | None = None,
     ):
         """Run one analyzer pass.
 
@@ -93,11 +94,15 @@ class AnalyzerHarness:
         record), tool_handlers can do real work - e.g. call another LLM
         for the IDC validator. The harness still records each call in
         ``self.last_soft_calls[name]`` so callers can enforce a budget
-        from inside the handler.
+        from inside the handler. A handler can also end the run by
+        setting ``harness.finished`` to a submission dict (``memo`` plus
+        optional ``notebook``); ``run()`` then returns that memo.
         """
         self.backend = backend
         self.round_dir = Path(round_dir)
-        self.fs = RoundReadOnlyFS(round_dir, previous_skill=previous_skill)
+        self.fs = RoundReadOnlyFS(
+            round_dir, previous_skill=previous_skill, readable_paths=readable_paths,
+        )
         self.game = game
         self.round_idx = round_idx
         self.n_episodes = n_episodes
@@ -127,6 +132,8 @@ class AnalyzerHarness:
         # non-terminating tools like submit_diagnosis. Caller reads these
         # after run() returns.
         self.last_soft_calls: dict[str, list[dict]] = {}
+        # Set by a tool handler to end the run with this submission.
+        self.finished: dict | None = None
         # Internal counters.
         self._submit_retries_left = self.max_post_submit_retries
 
@@ -139,6 +146,7 @@ class AnalyzerHarness:
         the previous round's skill in that case.
         """
         self.trace = []
+        self.finished = None
         seed = self.seed_message if self.seed_message is not None else build_seed_message(
             game=self.game,
             round_idx=self.round_idx,
@@ -315,6 +323,16 @@ class AnalyzerHarness:
                     self.messages.append({
                         "role": "user", "content": tool_result_blocks,
                     })
+                    if self.finished is not None:
+                        memo = (self.finished.get("memo") or "").strip()
+                        self.trace.append({
+                            "iteration": iteration,
+                            "event": "finished_by_tool",
+                            "reason": self.finished.get("reason"),
+                            "memo_chars": len(memo),
+                        })
+                        self.last_submission = dict(self.finished)
+                        return memo, self.trace, self.messages
                 else:
                     # Pure-text turn. Check for a skill block fallback.
                     text = "\n\n".join(b.get("text", "") for b in text_blocks)

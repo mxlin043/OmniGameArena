@@ -29,7 +29,7 @@ YAML shape
       temperature: 0.3               #   scalar -> single value
       ...
 
-    episodes_per_cell: 3             # axis C
+    episodes_per_cell: 5             # axis C
 
 Inheritance semantics
 ---------------------
@@ -44,6 +44,8 @@ it's trivial to unit-test and dry-run.
 """
 
 from __future__ import annotations
+
+from omni_game_arena.utils.public_config import public_config
 
 import copy
 import itertools
@@ -61,7 +63,7 @@ class EnvSpec:
     task: str = ""
     max_steps: int = 220
     screenshot_quality: int = 85
-    # UE5 map to switch to on reset (via console ``open /Game/Maps/<name>``).
+    # UE5 map to switch to on reset (``open /Game/OmniGameArena/Map/<name>``).
     # Empty = don't switch maps; whatever scene UE5 currently has stays.
     # Accepts a short name (``ObstacleRun2D``) or a full package path.
     map: str = ""
@@ -86,6 +88,7 @@ class AgentProfile:
         - ``vlm``      : ``omni_game_arena.models.VLMAgent`` (Backend x MethodStyle).
         - ``openp2p``  : ``omni_game_arena.models.OpenP2PAgent`` (OpenP2P policy).
         - ``nitrogen`` : ``omni_game_arena.models.NitroGenAgent`` (NitroGen policy).
+        - ``random``   : ``omni_game_arena.models.RandomAgent`` (no model/API).
 
     ``method`` selects the VLM output style (only meaningful when
     ``kind == "vlm"``):
@@ -102,6 +105,12 @@ class AgentProfile:
     # Markdown snippets injected into VLM prompts as reusable play experience.
     # Policy agents (openp2p / nitrogen) ignore these.
     prompt_skills: list[str] = field(default_factory=list)
+    # Optional per-profile map-prompt override. This keeps the canonical game
+    # (and therefore its action/metric spec) unchanged while a held-out map
+    # variant supplies different task facts, such as a leftward finish line.
+    # In two-player configs, {player} expands to the display number 1 or 2;
+    # players_defaults can therefore select separate role descriptions.
+    game_prompt_key: str | None = None
 
 
 @dataclass
@@ -131,6 +140,14 @@ class ParamsPoint:
     resize_size: int = 512
     hold_duration: float = 0.2
     with_game_prompt: bool = True
+    # Independently include each remaining system-prompt section.
+    with_controls_prompt: bool = True
+    with_skill_prompt: bool = False
+    with_output_format_prompt: bool = True
+    # Whether any screenshot is sent to the model. False is the strict
+    # text-only / no-frame ablation: current, history, and recap images are
+    # all removed while textual prompts and action history remain unchanged.
+    with_visual_input: bool = True
     # Whether Lumine-style prompts ask the model to include a short reasoning
     # sentence before the action. False requests action-only output.
     with_reasoning: bool = True
@@ -148,10 +165,15 @@ class ParamsPoint:
     frame_pack: str = "none"
     frame_pack_min_size: int = 112
 
-    def short_id(self) -> str:
-        """Compact string used in output dir names."""
+    def short_id(self, *, temperature_sent: bool = True) -> str:
+        """Compact string used in output dir names.
+
+        ``temperature_sent=False`` omits the temperature for models whose
+        API never receives it.
+        """
         gp = "gp" if self.with_game_prompt else "nogp"
         t = "none" if self.temperature is None else f"{self.temperature:g}"
+        t_part = f"_t{t}" if temperature_sent else ""
         r = "native" if self.resize_size <= 0 else str(self.resize_size)
         if self.frame_pack == "none":
             fp = ""
@@ -171,10 +193,35 @@ class ParamsPoint:
         )
         od = "default" if self.obs_delay is None else f"{self.obs_delay:g}"
         reasoning = "" if self.with_reasoning else "_noreason"
-        return (
-            f"h{self.history_len}_t{t}_r{r}"
-            f"_hd{self.hold_duration:g}_od{od}_{gp}{reasoning}{fp}{cs}{hr}"
+        visual = "" if self.with_visual_input else "_noframe"
+        sections = (
+            ("" if self.with_controls_prompt else "_noctrl")
+            + ("" if self.with_skill_prompt else "_noskill")
+            + ("" if self.with_output_format_prompt else "_nofmt")
         )
+        return (
+            f"h{self.history_len}{t_part}_r{r}"
+            f"_hd{self.hold_duration:g}_od{od}_{gp}{reasoning}{visual}{sections}{fp}{cs}{hr}"
+        )
+
+
+def drops_temperature(agent: AgentProfile) -> bool:
+    """True for a VLM whose API rejects ``temperature``: it never receives
+    the configured value, so results must not record one."""
+    if agent.kind != "vlm":
+        return False
+    from omni_game_arena.models.backends import sends_temperature
+
+    return not sends_temperature(agent.model, base_url=agent.extra.get("base_url"))
+
+
+def params_record(params: ParamsPoint, agents: list[AgentProfile]) -> dict:
+    """``params`` as written to results and configs, without ``temperature``
+    when any of ``agents`` never receives it."""
+    record = asdict(params)
+    if any(drops_temperature(agent) for agent in agents):
+        record.pop("temperature", None)
+    return record
 
 
 @dataclass
@@ -191,13 +238,13 @@ class Experiment:
         d = {
             "game": self.game,
             "env": asdict(self.env),
-            "agent": asdict(self.agent),
+            "agent": public_config(self.agent),
         }
         # VLM param knobs only matter for VLM agents; policy agents
         # (nitrogen / openp2p) are configured entirely via agent.extra,
         # so omit the irrelevant params block for them.
         if self.agent.kind == "vlm":
-            d["params"] = asdict(self.params)
+            d["params"] = params_record(self.params, [self.agent])
         d["episode_idx"] = self.episode_idx
         d["run_id"] = self.run_id
         return d
@@ -221,7 +268,7 @@ class TwoPlayerExperiment:
             "game": self.game,
             "env": asdict(self.env),
             "players": [_player_spec_output_dict(p) for p in self.players],
-            "params": asdict(self.params),
+            "params": params_record(self.params, [p.agent for p in self.players]),
             "episode_idx": self.episode_idx,
             "run_id": self.run_id,
         }
@@ -270,7 +317,6 @@ def load_benchmark_config(path: str) -> dict:
 
 # -- Endpoint routing -----------------------------------------------------
 
-_ROUTER_CACHE: dict[str, Any] | None = None
 _MAPS_CACHE: dict[str, Any] | None = None
 
 
@@ -284,34 +330,19 @@ def _load_router_config(path: str | bool | None = None) -> dict[str, Any]:
     The router is intentionally optional: old benchmark YAMLs still work.
     Explicit per-agent ``extra`` values always win over router defaults.
     """
-    global _ROUTER_CACHE
     if path is False:
         return {}
-    if _ROUTER_CACHE is not None and path in (None, "", True):
-        return _ROUTER_CACHE
+    from omni_game_arena.routing import router_path
+    import yaml
 
-    import yaml  # noqa: PLC0415
-
-    raw_path = (
-        os.getenv("OMNI_ARENA_ROUTER_CONFIG")
-        or (path if isinstance(path, str) else None)
-        or os.path.join(_repo_root(), "configs", "router.yaml")
-    )
-    router_path = (
-        raw_path
-        if os.path.isabs(raw_path)
-        else os.path.join(_repo_root(), raw_path)
-    )
-    if not os.path.exists(router_path):
-        if path in (None, "", True):
-            _ROUTER_CACHE = {}
+    selected = router_path(path if isinstance(path, str) else None, root=_repo_root())
+    if not selected.exists():
+        if os.getenv("OMNI_ARENA_ROUTER_CONFIG") or isinstance(path, str) and path:
+            raise RuntimeError(f"Router config not found: {selected}")
         return {}
-
-    with open(router_path, "r", encoding="utf-8") as f:
-        router = yaml.safe_load(f) or {}
-    _apply_router_environment(router)
-    if path in (None, "", True):
-        _ROUTER_CACHE = router
+    router = yaml.safe_load(selected.read_text(encoding="utf-8-sig")) or {}
+    if not isinstance(router, dict):
+        raise ValueError("Router config must be a YAML mapping")
     return router
 
 
@@ -420,7 +451,7 @@ def _materialize_route_extra(route: dict | None, *, keep_unknown: bool) -> dict:
     for field in ("base_url", "api_key", "url"):
         env_name = route.get(f"{field}_env")
         env_val = _env_value(env_name)
-        if env_val is not None and field not in out:
+        if env_val is not None:
             out[field] = env_val
 
     if keep_unknown:
@@ -453,26 +484,6 @@ def _router_model_route(router: dict, model: str) -> dict:
         if any(str(alias).lower() == model_l for alias in aliases):
             return route or {}
     return {}
-
-
-def _apply_router_environment(router: dict) -> None:
-    """Set commercial backend env defaults from router values.
-
-    We only set env vars that are currently empty, so shell/user overrides win.
-    This keeps commercial backends unchanged while allowing a single router
-    file to define their base URLs and keys.
-    """
-    commercial = (router or {}).get("commercial") or {}
-    if not isinstance(commercial, dict):
-        return
-    for route in commercial.values():
-        if not isinstance(route, dict):
-            continue
-        for field in ("base_url", "api_key"):
-            env_name = route.get(f"{field}_env")
-            value = route.get(field)
-            if env_name and value not in (None, "") and not os.getenv(str(env_name)):
-                os.environ[str(env_name)] = str(value)
 
 
 def _apply_router_to_agent(agent_cfg: dict, router: dict) -> dict:
@@ -568,6 +579,12 @@ def _build_players(cfg: dict, env: EnvSpec, num_players: int) -> list[PlayerSpec
     """Parse two-player ``players:`` entries."""
     defaults = cfg.get("players_defaults") or cfg.get("agents_defaults") or {}
     router = _load_router_config(cfg.get("router_config", cfg.get("router")))
+    # Top-level `prompt_skills:` (and --prompt-skill, which writes into it)
+    # applies to coop players too. `_parse_agents` already folds it into
+    # every `agents:` profile; without the same step here the flag was
+    # silently dropped for two-player games -- accepted on the command
+    # line, never reaching either agent's system prompt.
+    global_prompt_skills = _as_str_list(cfg.get("prompt_skills") or [])
     raw = cfg.get("players") or []
     if not raw:
         raise ValueError(
@@ -604,6 +621,11 @@ def _build_players(cfg: dict, env: EnvSpec, num_players: int) -> list[PlayerSpec
             agent_cfg = _deep_merge(defaults, nested_agent)
         else:
             agent_cfg = _deep_merge(defaults, item)
+        agent_cfg["prompt_skills"] = _dedupe_preserve_order(
+            global_prompt_skills
+            + _as_str_list(defaults.get("prompt_skills") or [])
+            + _as_str_list(agent_cfg.get("prompt_skills") or [])
+        )
         agent_cfg = _apply_router_to_agent(agent_cfg, router)
         _reject_legacy_backend_field(agent_cfg)
 
@@ -680,7 +702,7 @@ def expand_experiments(
     env = _build_env(cfg, game_default_task)
     agents = _build_agents(cfg)
     param_points = _expand_params(cfg)
-    episodes_per_cell = int(cfg.get("episodes_per_cell", 1))
+    episodes_per_cell = int(cfg.get("episodes_per_cell", 5))
 
     include = _as_str_list(cfg.get("include_agents") or [])
     exclude = set(cfg.get("exclude_agents") or [])
@@ -708,7 +730,10 @@ def expand_experiments(
                 # Keep run_id at the cell level; episode_idx carries the repeat index.
                 # Policy agents (nitrogen / openp2p) ignore the VLM param knobs,
                 # so give them a plain kind-based id instead of the VLM short_id.
-                run_id = ab.short_id() if agent.kind == "vlm" else agent.kind
+                run_id = (
+                    ab.short_id(temperature_sent=not drops_temperature(agent))
+                    if agent.kind == "vlm" else agent.kind
+                )
                 experiments.append(
                     Experiment(
                         game=game_name,
@@ -732,13 +757,14 @@ def expand_two_player_experiments(
     env = _build_env(cfg, game_default_task)
     players = _build_players(cfg, env, num_players)
     param_points = _expand_params(cfg)
-    episodes_per_cell = int(cfg.get("episodes_per_cell", 1))
+    episodes_per_cell = int(cfg.get("episodes_per_cell", 5))
     player_slug = _players_slug(players)
+    temperature_sent = not any(drops_temperature(p.agent) for p in players)
 
     experiments: list[TwoPlayerExperiment] = []
     for ab in param_points:
         for ep in range(episodes_per_cell):
-            run_id = f"{player_slug}/{ab.short_id()}"
+            run_id = f"{player_slug}/{ab.short_id(temperature_sent=temperature_sent)}"
             experiments.append(
                 TwoPlayerExperiment(
                     game=game_name,
@@ -768,7 +794,7 @@ def _player_label(player_index: int) -> str:
 
 
 def _player_spec_output_dict(player: PlayerSpec) -> dict:
-    data = asdict(player)
+    data = public_config(player)
     internal_index = player.player_index
     data["ue_player_index"] = internal_index
     data["player_index"] = _player_display_id(internal_index)

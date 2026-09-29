@@ -4,10 +4,25 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any
 
 from ..logging_utils import timestamp_slug
+
+
+def _replace_with_retry(source: Path, destination: Path) -> None:
+    """Keep replacement atomic while tolerating brief Windows file locks."""
+    for attempt in range(10):
+        try:
+            os.replace(source, destination)
+            return
+        except PermissionError as exc:
+            # A reader or scanner can briefly deny deletion of the destination.
+            # Persistent access errors still fail without removing the old file.
+            if getattr(exc, "winerror", None) not in (5, 32, 33) or attempt == 9:
+                raise
+            time.sleep(min(0.05 * 2**attempt, 0.5))
 
 
 def resolve_idc_run_dir(
@@ -30,7 +45,7 @@ def atomic_write_json(path: str | Path, obj: Any) -> None:
     with tmp.open("w", encoding="utf-8") as f:
         json.dump(obj, f, indent=2, ensure_ascii=False, default=str)
         f.write("\n")
-    os.replace(tmp, path)
+    _replace_with_retry(tmp, path)
 
 
 def atomic_write_text(path: str | Path, text: str) -> None:
@@ -39,7 +54,7 @@ def atomic_write_text(path: str | Path, text: str) -> None:
     tmp = path.with_name(path.name + ".tmp")
     with tmp.open("w", encoding="utf-8") as f:
         f.write(text or "")
-    os.replace(tmp, path)
+    _replace_with_retry(tmp, path)
 
 
 def load_json(path: str | Path) -> Any:

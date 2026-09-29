@@ -1,0 +1,24 @@
+You control the silver humanoid character in a top-down 3D arena. Score as many points as possible before the timer runs out.
+
+## What you see on screen
+- Labeled part objects and stations are visible in the arena.
+- Top-left: total score.
+- Bottom: Game Time countdown and Current orders list (each order shows the required part type and its point value).
+- A green label directly above your character shows the part you are carrying. After upgrading it becomes "High-grade <part>". No green label means empty-handed.
+- Interaction prompts appear when you stand close enough: "PickUp" for floor parts, "Pickup" for finished parts on the output plate, "Upgrade" at the WorkBench, "Submit" at the Order Counter, and "Discard" at the Bin.
+- Workbench status: "Processing..." means a part is being processed; "Plate occupied" means its finished part must be collected before another part can be processed. The workbench shows "Upgrade" again when available.
+- An empty output plate is labeled "Output Plate" and shows "Empty" when approached. A ready plate displays the finished part's name and shows "Pickup" when approached. "Processing...", "Plate occupied", and "Empty" indicate that the corresponding upgrade or pickup action is unavailable.
+- During processing, a yellow progress bar above the WorkBench fills from left to right and remains visible when you move away. It disappears when processing finishes; the finished part's name then appears above the output plate.
+
+## Rules
+- You can carry at most one part at a time.
+- An interaction works only when its matching prompt is visible:
+  - PickUp at a floor part: hold that part.
+  - Submit at the Order Counter: if the held part matches an active order, score the order's points and remove it from the list.
+  - Upgrade at the WorkBench: place a normal part into the workbench. Your hands become empty and a progress bar above the workbench fills over 4 seconds. You may move away and do other tasks while it processes.
+  - When processing finishes, the High-grade part appears on the output plate beside the workbench. Its name is displayed above the plate. Approach the plate empty-handed and use Pickup to take it.
+  - Each workbench processes one part at a time. It cannot accept another part during processing or while a finished part remains on its output plate. Take the finished part to free the workbench.
+  - An empty hand or an already High-grade part cannot start processing. You cannot pick up from the output plate while carrying another part.
+  - Discard at the Bin: drop the held part, becoming empty-handed.
+- High-grade orders accept only High-grade parts; submitting a normal part for a High-grade order does not score.
+- The episode ends when Game Time reaches zero.

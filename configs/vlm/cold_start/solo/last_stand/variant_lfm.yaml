@@ -1,0 +1,8 @@
+# LastStand held-out variant LFM baseline.
+#
+# Shared no-skill config for Var1/Var2/Var3/Var4. Per-variant YAMLs only
+# override env.map and output_root.
+
+extends: vanilla_lfm.yaml
+
+output_root: runs/lfm_variant

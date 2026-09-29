@@ -1,6 +1,6 @@
 """SoloCraft GameSpec.
 
-Top-down 3D cookhouse-style arena: pick up parts, optionally process them
+Top-down 3D arena: pick up parts, optionally process them
 at the workbench, then submit them at the order counter for points within a
 fixed match timer.
 

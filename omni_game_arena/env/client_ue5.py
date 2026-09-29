@@ -68,6 +68,9 @@ class UE5Client:
         self._send_lock = threading.Lock()
         self._recv_lock = threading.Lock()
         self._recv_buffer = b""
+        # Opt-in for resumable runs: console acknowledgements must never be
+        # mistaken for a score or terminal-state reply.
+        self.strict_response_matching = False
 
     def connect(self) -> bool:
         """Connect to UE5 RemoteInput server."""
@@ -234,10 +237,10 @@ class UE5Client:
         """Debug helper: switch the active level.
 
         Accepts either a short name (``MyMap``) or a full package path
-        (``/Game/Maps/MyMap``). Anything without a slash is prefixed with
-        ``/Game/Maps/`` automatically.
+        (``/Game/OmniGameArena/Map/MyMap``). Anything without a slash is
+        prefixed with ``/Game/OmniGameArena/Map/`` automatically.
         """
-        path = map_name if "/" in map_name else f"/Game/Maps/{map_name}"
+        path = map_name if "/" in map_name else f"/Game/OmniGameArena/Map/{map_name}"
         self.console_command(f"open {path}")
         self.game_over = False
         self._game_over_check_supported = None
@@ -299,8 +302,7 @@ class UE5Client:
             self._send_raw({"type": "game_over_check"})
             old_timeout = self._begin_request_timeout_inner(timeout)
             try:
-                line = self._recv_line()
-                result = json.loads(line)
+                result = self._read_response(lambda value: value.get('type') == 'game_over_check')
                 self._game_over_check_supported = True
                 self._game_over_check_timeouts = 0
                 if "player_index" in result:
@@ -348,8 +350,7 @@ class UE5Client:
             self._send_raw(msg)
             old_timeout = self._begin_request_timeout_inner()
             try:
-                line = self._recv_line()
-                result = json.loads(line)
+                result = self._read_response(lambda value: 'score' in value)
                 self.score_payload = result
                 self.score = float(result.get("score", 0.0))
                 if "survival_time" in result:
@@ -399,6 +400,17 @@ class UE5Client:
                 self._restore_timeout_inner(old_timeout)
 
     # -- Low-level recv helpers --------------------------------------
+
+    def _read_response(self, matches):
+        for _ in range(30):
+            result = json.loads(self._recv_line())
+            if not self.strict_response_matching or matches(result):
+                return result
+            if result.get('type') == 'game_over':
+                self.game_over = True
+            elif result.get('type') == 'screenshot' and 'size' in result:
+                self._recv_exact(result['size'])
+        raise RuntimeError('Too many unrelated responses before expected UE reply')
 
     def _begin_request_timeout_inner(self, timeout: float | None = None):
         """Set a finite timeout for a request-response read.

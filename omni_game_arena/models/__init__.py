@@ -1,11 +1,12 @@
 """Agent implementations.
 
-Three kinds of agent live here; each satisfies ``BaseAgent``:
+Four kinds of agent live here; each satisfies ``BaseAgent``:
 
   - ``VLMAgent``       : general VLM (Claude / Gemini / GPT / Qwen-VL).
                          Driven by a Backend + a MethodStyle.
   - ``OpenP2PAgent``   : OpenP2P specialized game policy (HTTP server).
   - ``NitroGenAgent``  : NitroGen specialized game policy (HTTP server).
+  - ``RandomAgent``    : reproducible legal-action baseline (no model/API).
 
 Backends live in ``omni_game_arena.models.backends``; prompt methods live in
 ``omni_game_arena.prompts.methods``.
@@ -14,6 +15,7 @@ Backends live in ``omni_game_arena.models.backends``; prompt methods live in
 from .base import BaseAgent
 from .nitrogen import NitroGenAgent
 from .openp2p import OpenP2PAgent
+from .random_agent import RandomAgent
 from .vlm import EmptyModelResponseError, VLMAgent
 
 __all__ = [
@@ -22,4 +24,5 @@ __all__ = [
     "EmptyModelResponseError",
     "OpenP2PAgent",
     "NitroGenAgent",
+    "RandomAgent",
 ]

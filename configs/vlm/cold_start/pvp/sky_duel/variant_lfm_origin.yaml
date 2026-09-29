@@ -1,0 +1,14 @@
+extends: vanilla_lfm.yaml
+
+output_root: runs/lfm_variant/sky_duel/origin
+output_root_is_final: true
+
+env:
+  map: sky_duel
+
+players_defaults:
+  game_prompt_key: sky_duel_player{player}
+
+params:
+  with_reasoning: true
+  with_skill_prompt: false

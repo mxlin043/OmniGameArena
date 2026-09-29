@@ -1,10 +1,10 @@
 """OpenAI-compatible commercial VLM backend.
 
 Handles all models that talk OpenAI ``chat/completions`` schema -
-GPT-*, Gemini-*, Kimi-*, Hunyuan, GLM, etc. A single proxy can front
-all of these behind one OpenAI-compatible endpoint, so we ship one
-Backend for those OpenAI-compatible commercial routes instead of
-separate per-vendor classes.
+GPT-*, Gemini-* and Kimi-*. A single proxy can front all of these
+behind one OpenAI-compatible endpoint, so we ship one Backend for
+those OpenAI-compatible commercial routes instead of separate
+per-vendor classes.
 
 Endpoint and key are read from ``configs/router.yaml``.
 """
@@ -19,8 +19,10 @@ from dataclasses import asdict
 from PIL import Image
 
 from ..base import Backend
+from ..http_errors import RETRYABLE_HTTP_STATUS as RETRYABLE_STATUS
 from ..timing import CallLatency, timed_post
-from .router_config import commercial_value
+from .router_config import commercial_headers, commercial_option, commercial_value
+from .responses_adapter import chat_response, responses_params
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ logger = logging.getLogger(__name__)
 # configured proxy. New names only need to be added here.
 AVAILABLE_MODELS = [
     "gpt-5.4-mini",
-    "gemini-3.1-flash-lite-preview",
+    "gemini-3-flash-preview",
     "Kimi-K2.5",
     "gpt-5.5",
     "gpt-5.4",
@@ -38,45 +40,38 @@ AVAILABLE_MODELS = [
 # These model families reject non-default/deprecated temperature.
 NO_TEMPERATURE_PREFIXES = ("gpt-5", "o1", "o3", "o4")
 
-# Per-model client-side throttling (seconds between consecutive requests).
-# Some models on the gateway have very tight QPS quotas. Lookup is
-# case-insensitive against ``model.lower()``.
-MIN_INTERVAL_SECONDS = {
-    "hunyuan-turbos-vision-latest": 4.0,
-}
 
-RETRYABLE_STATUS = {408, 425, 429, 500, 502, 503, 504}
+def sends_temperature(model: str) -> bool:
+    """False when this endpoint rejects ``temperature`` for ``model``."""
+    return not model.lower().startswith(NO_TEMPERATURE_PREFIXES)
 
-LCRT_LATENCY_POLICY = {
-    "gpt-5.4-mini": "usage.latency_checkpoint.engine_ttlt_ms",
-    "gpt-5.4": "usage.latency_checkpoint.engine_ttlt_ms",
-    "gpt-5.5": "usage.latency_checkpoint.engine_ttlt_ms",
-    "gemini-3.1-flash-lite-preview": "timed_post.ttfb_minus_tcp",
-    "gemini-3.1-pro-preview": "timed_post.ttfb_minus_tcp",
-    "kimi-k2.5": "timed_post.ttfb_minus_tcp",
-}
+# The gateway can spend longer than the request timeout on uncapped
+# Gemini 3 Flash calls. Keep a finite default for player/reflector calls;
+# callers can set a smaller or larger explicit cap when appropriate.
+DEFAULT_MAX_TOKENS = {"gemini-3-flash-preview": 8192}
 
 
-def _effective_base_url() -> str:
-    return commercial_value("openai", "base_url")
 
 
-def _effective_api_key() -> str:
-    return commercial_value("openai", "api_key")
+def _effective_base_url(model: str | None = None) -> str:
+    return commercial_value("openai", "base_url", model=model)
 
 
-# Convenience constants for callers that POST raw HTTP themselves.
-BASE_URL = _effective_base_url()
-API_KEY = _effective_api_key()
-API_URL = f"{BASE_URL}/chat/completions"
-HEADERS = {"Authorization": f"Bearer {API_KEY}"}
+def _effective_api_key(model: str | None = None) -> str:
+    return commercial_value("openai", "api_key", model=model)
 
 
 class OpenAIBackend(Backend):
     """OpenAI SDK client for any OpenAI-compatible chat-completions endpoint."""
 
-    def __init__(self, model: str, **kwargs):
+    def __init__(self, model: str, *, max_tokens: int | None = None, **kwargs):
         super().__init__(model, **kwargs)
+        self.max_tokens = (
+            int(max_tokens) if max_tokens is not None
+            else DEFAULT_MAX_TOKENS.get(model.lower())
+        )
+        if self.max_tokens is not None and self.max_tokens <= 0:
+            raise ValueError("max_tokens must be positive")
         try:
             from openai import OpenAI
         except ImportError as exc:
@@ -85,19 +80,21 @@ class OpenAIBackend(Backend):
                 "Install it with: python -m pip install openai"
             ) from exc
 
-        self.base_url = _effective_base_url()
-        self.api_key = _effective_api_key()
+        self.base_url = _effective_base_url(model)
+        self.api_key = _effective_api_key(model)
+        self.extra_headers = commercial_headers("openai", model=model)
+        self.api_mode = commercial_option("openai", "api_mode", "chat_completions", model=model)
+        if self.api_mode not in {"chat_completions", "responses"}:
+            raise ValueError(f"Unsupported OpenAI api_mode: {self.api_mode!r}")
         self._client = OpenAI(
             base_url=self.base_url,
             api_key=self.api_key,
             timeout=self.request_timeout,
             max_retries=0,
+            default_headers=self.extra_headers,
         )
 
-        name = model.lower()
-        self._send_temperature = not name.startswith(NO_TEMPERATURE_PREFIXES)
-        self._min_interval = MIN_INTERVAL_SECONDS.get(name, 0.0)
-        self._last_request_at: float = 0.0
+        self._send_temperature = sends_temperature(model)
 
     def make_image_content(self, img: Image.Image) -> dict:
         b64 = self.encode_image(img)
@@ -106,43 +103,79 @@ class OpenAIBackend(Backend):
             "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
         }
 
-    def _respect_min_interval(self) -> None:
-        if self._min_interval <= 0:
-            return
-        elapsed = time.time() - self._last_request_at
-        if elapsed < self._min_interval:
-            time.sleep(self._min_interval - elapsed)
-
     @staticmethod
     def _sleep_before_retry(attempt: int) -> None:
         time.sleep(min(2 ** attempt, 5.0))
+
+    def _rebuild_client(self) -> None:
+        """Discard the connection pool and start a new one.
+
+        Called after a timeout: the pooled connection is very likely
+        half-open, and every retry that reuses it will time out too.
+        """
+        try:
+            from openai import OpenAI
+        except ImportError:
+            return
+        try:
+            self._client.close()
+        except Exception:  # noqa: BLE001 - best effort; the pool may be wedged
+            pass
+        self._client = OpenAI(
+            base_url=self.base_url,
+            api_key=self.api_key,
+            timeout=self.request_timeout,
+            max_retries=0,
+            default_headers=self.extra_headers,
+        )
+        logger.info(
+            "%s rebuilt HTTP client after timeout (model=%s)",
+            type(self).__name__, self.model,
+        )
+
+    def _retry_after_error(self, attempt: int, exc: Exception) -> None:
+        """Back off, and rebuild the client first when the error was a timeout."""
+        name = f"{type(exc).__name__} {exc}".lower()
+        if "timeout" in name or "timed out" in name:
+            self._rebuild_client()
+        self._sleep_before_retry(attempt)
+
+    def _create_completion(self, params: dict):
+        if self.api_mode == "responses":
+            from openai.types.chat import ChatCompletion
+
+            result = self._client.responses.create(
+                **responses_params(params), timeout=self.request_timeout,
+            )
+            return ChatCompletion.model_validate(chat_response(result.model_dump()))
+        return self._client.chat.completions.create(
+            **params, timeout=self.request_timeout,
+        )
 
     def chat(self, messages: list[dict]) -> str:
         self.last_messages = messages
         self._clear_latency_metadata()
 
         params: dict = {"model": self.model, "messages": messages}
+        if self.max_tokens is not None:
+            params["max_tokens"] = self.max_tokens
         if self.temperature is not None and self._send_temperature:
             params["temperature"] = self.temperature
 
-        if self.lcrt_timing_enabled:
+        if self.lcm_timing_enabled:
             return self._chat_timed_post(messages, params)
 
         total = self.max_retries + 1
         for attempt in range(total):
             attempt_no = attempt + 1
-            self._respect_min_interval()
             t0 = time.time()
             try:
-                self._last_request_at = t0
-                result = self._client.chat.completions.create(
-                    **params,
-                    timeout=self.request_timeout,
-                )
+                result = self._create_completion(params)
             except Exception as exc:  # noqa: BLE001
                 self.last_response_json = {
                     "error": type(exc).__name__,
                     "text": str(exc),
+                    "cause": type(exc.__cause__).__name__ if exc.__cause__ else None,
                 }
                 if _is_retryable_api_exception(exc) and attempt_no < total:
                     logger.warning(
@@ -153,7 +186,7 @@ class OpenAIBackend(Backend):
                         total,
                         exc,
                     )
-                    self._sleep_before_retry(attempt)
+                    self._retry_after_error(attempt, exc)
                     continue
 
                 logger.error(
@@ -163,6 +196,7 @@ class OpenAIBackend(Backend):
                     total,
                     exc,
                 )
+                self.last_request_error = exc
                 self._debug_record(
                     messages=messages,
                     response=self.last_response_json,
@@ -197,7 +231,7 @@ class OpenAIBackend(Backend):
                 messages=messages,
                 response=text,
                 latency_s=latency_s,
-                status="ok" if text else "empty",
+                status="ok" if text.strip() else "empty",
                 extra={"attempts": attempt_no},
             )
             return text
@@ -206,20 +240,21 @@ class OpenAIBackend(Backend):
 
     # -- debug sink ------------------------------------------------------
     def _chat_timed_post(self, messages: list[dict], params: dict) -> str:
-        url = f"{self.base_url.rstrip('/')}/chat/completions"
+        suffix = "responses" if self.api_mode == "responses" else "chat/completions"
+        url = f"{self.base_url.rstrip('/')}/{suffix}"
         headers = {
+            **self.extra_headers,
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
-        body_data = json.dumps(params).encode("utf-8")
+        wire_params = responses_params(params) if self.api_mode == "responses" else params
+        body_data = json.dumps(wire_params).encode("utf-8")
         total = self.max_retries + 1
 
         for attempt in range(total):
             attempt_no = attempt + 1
-            self._respect_min_interval()
             t0 = time.time()
             try:
-                self._last_request_at = t0
                 status, _resp_headers, resp_body, call_latency = timed_post(
                     url,
                     headers,
@@ -242,7 +277,7 @@ class OpenAIBackend(Backend):
                         total,
                         exc,
                     )
-                    self._sleep_before_retry(attempt)
+                    self._retry_after_error(attempt, exc)
                     continue
 
                 logger.error(
@@ -252,6 +287,7 @@ class OpenAIBackend(Backend):
                     total,
                     exc,
                 )
+                self.last_request_error = exc
                 self._debug_record(
                     messages=messages,
                     response=self.last_response_json,
@@ -277,7 +313,12 @@ class OpenAIBackend(Backend):
                     status,
                     call_latency.error,
                 )
-                self._sleep_before_retry(attempt)
+                # Not an exception path: the failure is carried in
+                # call_latency.error, so hand that text over instead of a
+                # variable that does not exist here.
+                self._retry_after_error(
+                    attempt, RuntimeError(str(call_latency.error or status))
+                )
                 continue
 
             try:
@@ -301,6 +342,7 @@ class OpenAIBackend(Backend):
             self._set_latency_from_response(body=body, call_latency=call_latency)
 
             if status != 200:
+                self.last_request_error = RuntimeError(f"OpenAI endpoint HTTP {status}")
                 logger.error(
                     "OpenAI timed HTTP %d (model=%s): %s",
                     status,
@@ -317,8 +359,13 @@ class OpenAIBackend(Backend):
                 return ""
 
             try:
+                if self.api_mode == "responses":
+                    body = chat_response(body)
+                    self.last_response_json = body
+                    self._set_latency_from_response(body=body, call_latency=call_latency)
                 text = body["choices"][0]["message"]["content"] or ""
-            except (KeyError, IndexError, TypeError) as exc:
+            except (KeyError, IndexError, TypeError, RuntimeError) as exc:
+                self.last_request_error = exc
                 logger.error("Failed to parse OpenAI timed response: %s", exc)
                 self._debug_record(
                     messages=messages,
@@ -333,7 +380,7 @@ class OpenAIBackend(Backend):
                 messages=messages,
                 response=text,
                 latency_s=latency_s,
-                status="ok" if text else "empty",
+                status="ok" if text.strip() else "empty",
                 extra={"attempts": attempt_no},
             )
             return text
@@ -352,9 +399,7 @@ class OpenAIBackend(Backend):
         if server_ms is not None and call_latency is not None:
             call_latency.server_latency_ms = float(server_ms)
         details: dict = {
-            "policy": LCRT_LATENCY_POLICY.get(
-                self.model.lower(), "timed_post.ttfb_minus_tcp"
-            ),
+            "policy": "server_reported_inference_only",
             "output_tokens": usage.get("completion_tokens"),
             "reasoning_tokens": (
                 (usage.get("completion_tokens_details") or {}).get("reasoning_tokens")
@@ -367,14 +412,6 @@ class OpenAIBackend(Backend):
             self._set_decision_latency(
                 float(server_ms) / 1000.0,
                 source="usage.latency_checkpoint.engine_ttlt_ms",
-                details=details,
-            )
-            return
-
-        if call_latency is not None:
-            self._set_decision_latency(
-                call_latency.pure_inference_ms / 1000.0,
-                source="timed_post.ttfb_minus_tcp",
                 details=details,
             )
             return
@@ -399,6 +436,7 @@ class OpenAIBackend(Backend):
             metadata = {
                 "model": self.model,
                 "backend": "openai_compat",
+                "api_mode": self.api_mode,
                 "endpoint": getattr(self, "base_url", None),
                 "latency_s": round(latency_s, 4),
                 "status": status,
@@ -406,7 +444,12 @@ class OpenAIBackend(Backend):
                 "decision_latency_source": self.last_decision_latency_source,
                 "latency_details": self.last_latency_details,
                 "mode": mode,
+                "configured_max_tokens": self.max_tokens,
+                "temperature": self.temperature if self._send_temperature else None,
             }
+            choices = (self.last_response_json or {}).get("choices") or []
+            if choices and isinstance(choices[0], dict):
+                metadata["finish_reason"] = choices[0].get("finish_reason")
             if extra:
                 metadata.update(extra)
             self.debug_logger.record(
@@ -466,20 +509,16 @@ class OpenAIBackend(Backend):
         }
         if self.temperature is not None and self._send_temperature:
             params["temperature"] = self.temperature
-        if max_tokens is not None:
-            params["max_tokens"] = int(max_tokens)
+        effective_max_tokens = max_tokens if max_tokens is not None else self.max_tokens
+        if effective_max_tokens is not None:
+            params["max_tokens"] = int(effective_max_tokens)
 
         total = self.max_retries + 1
         for attempt in range(total):
             attempt_no = attempt + 1
-            self._respect_min_interval()
             t0 = time.time()
             try:
-                self._last_request_at = t0
-                result = self._client.chat.completions.create(
-                    **params,
-                    timeout=self.request_timeout,
-                )
+                result = self._create_completion(params)
             except Exception as exc:  # noqa: BLE001
                 self.last_response_json = {
                     "error": type(exc).__name__,
@@ -491,7 +530,7 @@ class OpenAIBackend(Backend):
                         "retrying",
                         self.model, attempt_no, total, exc,
                     )
-                    self._sleep_before_retry(attempt)
+                    self._retry_after_error(attempt, exc)
                     continue
                 logger.error(
                     "OpenAI tool-use error (model=%s, attempt %d/%d): %s",
@@ -547,20 +586,18 @@ class OpenAIBackend(Backend):
 
 
 def _extract_server_latency_ms(usage: dict) -> float | None:
-    checkpoint = usage.get("latency_checkpoint") or {}
-    value = checkpoint.get("engine_ttlt_ms")
-    if value is None:
+    from omni_game_arena.clock import finite_nonnegative
+
+    checkpoint = usage.get("latency_checkpoint")
+    if not isinstance(checkpoint, dict):
         return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
+    return finite_nonnegative(checkpoint.get("engine_ttlt_ms"))
 
 
 def _is_retryable_api_exception(exc: Exception) -> bool:
     status = getattr(exc, "status_code", None)
-    if status in RETRYABLE_STATUS:
-        return True
+    if status is not None:
+        return status in RETRYABLE_STATUS
     name = type(exc).__name__.lower()
     text = str(exc).lower()
     if "timeout" in name or "timeout" in text or "timed out" in text:

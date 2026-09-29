@@ -4,7 +4,8 @@ Fixed order:
 
     1. Map description   ← GameSpec / load_game_prompt(<game>.txt)
     2. Key list          ← adapter.action_schema["key_bindings"]
-    3. Output format     ← MethodStyle.output_format()
+    3. Gameplay skill   ← optional text from prior runs
+    4. Output format     ← MethodStyle.output_format()
 
 The ``task`` field is intentionally NOT appended to VLM prompts. Task
 semantics belong inside the map description. The ``task`` field
@@ -15,8 +16,8 @@ short instructions instead of long prompts; use
 
 from __future__ import annotations
 
-from . import load_game_prompt
-from .methods import MethodStyle, get_method
+from .methods import MethodStyle
+from .modules import render_game_description, render_controls, render_skill, render_output_format
 
 
 def compose_vlm_system(
@@ -24,6 +25,11 @@ def compose_vlm_system(
     action_schema: dict,
     game: str | None,
     prompt_skill: str | None = None,
+    *,
+    with_game_prompt: bool = True,
+    with_controls_prompt: bool = True,
+    with_skill_prompt: bool = False,
+    with_output_format_prompt: bool = True,
 ) -> str:
     """Build the VLM system prompt.
 
@@ -38,33 +44,31 @@ def compose_vlm_system(
         prompt_skill: Optional gameplay skill / reusable experience section.
             Placed before the output format so the strict action schema remains
             the final instruction in the system prompt.
+        with_game_prompt / with_controls_prompt / with_skill_prompt /
+        with_output_format_prompt: Independent section switches. Skills
+            require explicit opt-in; the other sections default to enabled.
+            Enabled sections preserve their original text and blank lines.
 
     Returns:
         Full system prompt string.
     """
-    style = method if isinstance(method, MethodStyle) else get_method(method)
-
-    map_prompt = load_game_prompt(game) if game else ""
-    key_bindings = action_schema.get("key_bindings", "")
-    mouse_controls = action_schema.get("mouse_controls", "")
-    output_format = style.output_format(action_schema)
-
     sections: list[str] = []
-    if map_prompt:
-        sections.append(map_prompt)
-
-    controls_lines = []
-    if key_bindings:
-        controls_lines.append(key_bindings)
-    if mouse_controls:
-        controls_lines.append(mouse_controls)
-    if controls_lines:
-        sections.append("Available Controls\n" + "\n".join(controls_lines))
-
-    if prompt_skill:
-        sections.append("Gameplay Skill From Prior Runs\n" + prompt_skill)
-
-    sections.append(output_format)
+    if with_game_prompt:
+        description = render_game_description(game)
+        if description:
+            sections.append(description)
+    if with_controls_prompt:
+        controls = render_controls(action_schema)
+        if controls:
+            sections.append(controls)
+    if with_skill_prompt:
+        skill = render_skill(prompt_skill)
+        if skill:
+            sections.append(skill)
+    if with_output_format_prompt:
+        # Preserve the legacy trailing separator even for a custom style
+        # that renders an empty format string.
+        sections.append(render_output_format(method, action_schema))
 
     return "\n\n".join(sections)
 

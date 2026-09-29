@@ -50,7 +50,7 @@ class SceneEscapeSpec(GameSpec):
     default_task: str = (
         "Complete all 10 on-screen tasks before the countdown ends. Read the "
         "current task in the top-left corner of the screen, find the matching "
-        "object, and press F only when the yellow [Interact] prompt for that "
+        "object, and use the interaction button only when the yellow [Interact] prompt for that "
         "object is visible."
     )
     map: str = "scene_escape"

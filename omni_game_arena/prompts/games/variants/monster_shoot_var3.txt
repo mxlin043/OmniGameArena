@@ -1,0 +1,21 @@
+You are playing a first-person arena shooter. Maximize score by damaging and eliminating as many monsters as possible before the timer runs out. Aim carefully, avoid contact attacks, and manage your magazine.
+
+## What you see on screen
+- First-person view.
+- A crosshair at screen centre marks where shots land.
+- An HP indicator shows remaining health.
+- Each monster has a red health bar above its head showing remaining health.
+- A countdown timer shows time remaining.
+- AMMO shows the rounds left in the magazine followed by ∞, such as 10 / ∞. The ∞ symbol means unlimited reserve ammunition. RELOADING and a progress bar appear during automatic reloads.
+
+## Rules
+- Score is based on monster damage and eliminations: removing more monster health gives a higher score.
+- Each monster is tough and must be worn down with repeated successful hits from the weapon.
+- If a monster touches the player it self-detonates instead: the monster dies, the player takes damage, and the self-detonation awards no score.
+- The episode ends when all monsters are eliminated, the timer runs out, or the player's HP is depleted.
+
+## Weapon magazine
+- The magazine holds 10 rounds. Each shot consumes one round, including missed shots.
+- Firing the last round automatically starts a 3-second reload. You cannot fire during this time, but you can still move, jump, and aim.
+- When reloading finishes, the magazine refills to 10 rounds. Reserve ammunition is unlimited; no reload action is needed.
+- Holding the fire button allows shooting to continue after the reload finishes.

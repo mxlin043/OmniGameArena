@@ -11,6 +11,7 @@ from .base import Backend
 from .commercial import (
     AVAILABLE_MODELS as _GATEWAY_MODELS,
     resolve as _resolve_commercial,
+    sends_temperature as _commercial_sends_temperature,
 )
 from .selfhost import SelfHostBackend, resolve as _resolve_openai_compat_engine
 from .selfhost.models import get_profile as _get_openai_compat_profile
@@ -38,7 +39,8 @@ def pick_backend(
       1. Registered model profile, e.g. qwen3.5-397b-a17b.
       2. ``base_url`` set means an OpenAI-compatible VLM endpoint.
       3. Registered commercial gateway model or GPT/Gemini/Claude prefix.
-      4. Fallback to OpenAI-compatible VLM routing.
+    Any other name is an error, so a model is never silently served by a
+    different endpoint.
     """
     kwargs = {
         "resize": resize,
@@ -78,17 +80,26 @@ def pick_backend(
 
     name = model.lower()
     if name in _GATEWAY_MODEL_SET or name.startswith(("claude", "gemini", "gpt")):
-        return _resolve_commercial(model, **kwargs)
+        return _resolve_commercial(model, max_tokens=max_tokens, **kwargs)
 
-    return _resolve_openai_compat_engine(
-        model,
-        base_url=base_url,
-        api_key=api_key,
-        request_model=request_model,
-        max_tokens=max_tokens,
-        enable_thinking=enable_thinking,
-        **kwargs,
+    raise ValueError(
+        f"Unknown model {model!r}: register it under vlm.models in "
+        "configs/router.yaml, or give it an explicit base_url."
     )
 
 
-__all__ = ["Backend", "SelfHostBackend", "pick_backend"]
+def sends_temperature(model: str, *, base_url: str | None = None) -> bool:
+    """Whether the backend ``pick_backend`` selects sends a temperature.
+
+    Some commercial APIs (the GPT-5 family, Claude Opus 4.7) reject the
+    parameter, so those models run at their provider default.
+    """
+    if _get_openai_compat_profile(model) is not None or base_url:
+        return True
+    name = model.lower()
+    if name in _GATEWAY_MODEL_SET or name.startswith(("claude", "gemini", "gpt")):
+        return _commercial_sends_temperature(model)
+    return True
+
+
+__all__ = ["Backend", "SelfHostBackend", "pick_backend", "sends_temperature"]

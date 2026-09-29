@@ -1,0 +1,15 @@
+extends: vanilla_lfm.yaml
+
+output_root: runs/lfm_variant/obstacle_run_2d/Var2
+output_root_is_final: true
+
+env:
+  map: obstacle_run_2d_var2
+  task: Run to the left, avoid obstacles and gaps, and reach the finish line safely.
+
+agents_defaults:
+  game_prompt_key: variants/obstacle_run_2d_var2
+
+params:
+  with_reasoning: true
+  with_skill_prompt: false

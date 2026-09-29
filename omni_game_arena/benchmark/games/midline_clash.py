@@ -1,6 +1,6 @@
 """MidlineClash GameSpec.
 
-Two-player PvP CookHouse map, run as two parallel SoloEnv instances with one
+Two-player PvP map, run as two parallel SoloEnv instances with one
 RemoteInput port per player.
 """
 
@@ -36,7 +36,7 @@ class MidlineClashSpec(GameSpec):
         "MidlineClashPlayer1",
         "MidlineClashPlayer2",
     )
-    # Fixed top-down CookHouse camera; no mouse input for the first pass.
+    # Fixed top-down camera; no mouse input for the first pass.
     mouse_axes: tuple[str, ...] = ()
     key_bindings: dict = field(default_factory=lambda: dict(_KEY_BINDINGS))
     tap_keys: tuple[str, ...] = ("F",)

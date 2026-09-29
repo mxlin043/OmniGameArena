@@ -1,0 +1,10 @@
+extends: variant_lfm.yaml
+
+output_root: runs/lfm_variant/last_stand/Var3
+output_root_is_final: true
+
+env:
+  map: last_stand_var3
+
+agents_defaults:
+  game_prompt_key: variants/last_stand_var3

@@ -1,0 +1,13 @@
+You are playing a 3D obstacle course. You control a third-person character running across a sequence of floating platforms separated by gaps. The goal is to reach the finish line. You can move the character forward, backward, left, and right; jump; and rotate the view up, down, left, and right.
+
+## What you see on screen
+- Solid surfaces are the floating platforms; everything else is open blue sky (void).
+- A 3-minute countdown timer is shown on screen.
+
+## Rules
+- Platforms vary in size, shape, height, and lateral offset.
+- You can jump once from the ground and jump one additional time while airborne. Further jump presses have no effect until you land; landing restores the jumps.
+- If you walk off an edge without jumping, you still have only one airborne jump.
+- To trigger the second jump, release the jump button and press it again while still in the air. Holding the jump button does not repeatedly jump or keep the character rising.
+- Each jump gives a fixed upward boost. Gravity pulls the character down rapidly, limiting the height and airborne duration of each jump. The timing of the airborne jump affects the height and distance you can reach.
+- Reach the finish before the countdown ends; falling off a platform / into a gap fails the episode.

@@ -1,0 +1,10 @@
+extends: vanilla_lfm.yaml
+
+output_root: runs/lfm_variant/solo_craft/Var4
+output_root_is_final: true
+
+env:
+  map: solo_craft_var4
+
+agents_defaults:
+  game_prompt_key: variants/solo_craft_var4

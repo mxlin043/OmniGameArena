@@ -1,0 +1,14 @@
+extends: vanilla_lfm.yaml
+
+output_root: runs/lfm_variant/scene_escape/Var3
+output_root_is_final: true
+
+env:
+  map: scene_escape_var3
+
+agents_defaults:
+  game_prompt_key: variants/scene_escape_var3
+
+params:
+  with_reasoning: true
+  with_skill_prompt: false

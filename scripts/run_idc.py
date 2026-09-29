@@ -35,8 +35,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--port", type=int, default=None)
     p.add_argument("--rounds", type=int, default=None)
     p.add_argument("--episodes-per-round", type=int, default=None)
+    p.add_argument(
+        "--pvp-episodes-per-opponent", type=int, default=None,
+        help="PvP games per fixed opponent per round (config default: 1)",
+    )
+    p.add_argument("--dry-run", action="store_true", help="Validate and print the protocol without starting games or calling models")
     p.add_argument("--output-root", default=None)
-    p.add_argument("--pdq-root", default=None)
+    p.add_argument("--lfm-root", dest="lfm_root", default=None,
+                   help="LFM baseline directory")
     p.add_argument(
         "--live",
         action="store_true",
@@ -84,17 +90,35 @@ def main() -> int:
     if args.rounds is not None:
         cfg.rounds = args.rounds
     if args.episodes_per_round is not None:
+        if cfg.pvp_opponents:
+            raise SystemExit("For PvP use --pvp-episodes-per-opponent; round size is derived from the roster.")
         cfg.episodes_per_round = args.episodes_per_round
+    if args.pvp_episodes_per_opponent is not None:
+        if not cfg.pvp_opponents:
+            raise SystemExit("--pvp-episodes-per-opponent requires a PvP opponent roster")
+        cfg.pvp_episodes_per_opponent = args.pvp_episodes_per_opponent
+        cfg.episodes_per_round = len(cfg.pvp_opponents) * args.pvp_episodes_per_opponent
     if args.output_root:
         cfg.output_root = args.output_root
-    if args.pdq_root:
-        cfg.official_pdq_root = args.pdq_root
+    if args.lfm_root:
+        cfg.official_lfm_root = args.lfm_root
     if args.live:
         cfg.live = True
     if args.log_vlm:
         cfg.log_vlm = True
     if args.api_debug:
         cfg.api_debug = True
+
+    if args.dry_run:
+        import json
+        from omni_game_arena.benchmark.games import get_game
+        from omni_game_arena.benchmark.improvement_dynamics_curve.pvp import validate_pvp_config, protocol_for_config
+        if get_game(cfg.game_name).mode == "pvp":
+            validate_pvp_config(cfg)
+            print(json.dumps(protocol_for_config(cfg), ensure_ascii=False, indent=2))
+        else:
+            print(json.dumps(cfg.to_json_dict(), ensure_ascii=False, indent=2))
+        return 0
 
     result = run_idc(cfg)
     print(f"\n[idc done] {result['run_dir']}")

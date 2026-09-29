@@ -16,6 +16,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from PIL import Image, ImageFile
+from omni_game_arena.clock import finite_nonnegative
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -81,22 +82,27 @@ class Backend(ABC):
         )
         self.last_messages: list[dict] | None = None
         self.last_response_json: dict | None = None
+        # Keep exhausted transport failures distinct from a successful
+        # response containing no text. Agent-level empty-text retries
+        # must not multiply the backend's request retry budget.
+        self.last_request_error: Exception | None = None
         self.last_call_latency: Any | None = None
         self.last_decision_latency_s: float | None = None
         self.last_decision_latency_source: str | None = None
         self.last_latency_details: dict[str, Any] = {}
-        self.lcrt_timing_enabled = False
+        self.lcm_timing_enabled = False
         # Optional per-call API debug sink. When set (e.g. by a runner
         # script after constructing the backend), every chat / chat_with_tools
         # call writes a JSON file with the full request and response into
         # the logger's output directory. See utils.api_debug.ApiDebugLogger.
         self.debug_logger = None
 
-    def enable_lcrt_timing(self, enabled: bool = True) -> None:
-        """Ask the backend to collect model-side timing for LCRT runs."""
-        self.lcrt_timing_enabled = bool(enabled)
+    def enable_lcm_timing(self, enabled: bool = True) -> None:
+        """Collect server-reported inference time for LCM decisions."""
+        self.lcm_timing_enabled = bool(enabled)
 
     def _clear_latency_metadata(self) -> None:
+        self.last_request_error = None
         self.last_call_latency = None
         self.last_decision_latency_s = None
         self.last_decision_latency_source = None
@@ -109,10 +115,7 @@ class Backend(ABC):
         source: str | None,
         details: dict[str, Any] | None = None,
     ) -> None:
-        if latency_s is None:
-            self.last_decision_latency_s = None
-        else:
-            self.last_decision_latency_s = max(0.0, float(latency_s))
+        self.last_decision_latency_s = finite_nonnegative(latency_s)
         self.last_decision_latency_source = source
         self.last_latency_details = details or {}
 

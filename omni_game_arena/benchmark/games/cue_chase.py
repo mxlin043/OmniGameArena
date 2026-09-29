@@ -59,7 +59,7 @@ class CueChaseSpec(GameSpec):
     default_task: str = (
         "Complete all 10 NPC exchange tasks before the countdown ends. Read "
         "the task text in the top-left corner, use the NPC hint to find the "
-        "right NPC, and press F when the [Interaction] prompt is visible."
+        "right NPC, and use the interaction button when the [Interaction] prompt is visible."
     )
     map: str = "cue_chase"
     # Third-person camera: horizontal and vertical look, no scroll.

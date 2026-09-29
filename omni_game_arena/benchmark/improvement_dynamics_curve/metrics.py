@@ -32,19 +32,11 @@ def score_from_result(result: dict[str, Any]) -> float | None:
 
 def aggregate_episode_results(
     episodes: list[dict[str, Any]],
-    *,
-    success_threshold: float = 0.999,  # retained for API compat; unused
 ) -> dict[str, Any]:
     """Aggregate per-episode scores into round-level stats.
 
-    Returns only mean_score / scores / n / n_scored. The `success_rate`
-    field (proportion of episodes with score >= success_threshold) was
-    removed: per-game success has no shared meaning across games with
-    different score scales (e.g. 0-1 vs 9-14), and the reflector picked
-    it up as misleading signal. The success_threshold parameter is kept
-    for backwards compatibility with callers but no longer used.
+    Returns only mean_score / scores / n / n_scored.
     """
-    _ = success_threshold  # unused; kept for kwarg compat
     scores = [
         float(ep["score"])
         for ep in episodes

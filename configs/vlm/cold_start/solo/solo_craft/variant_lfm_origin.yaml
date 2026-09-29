@@ -1,0 +1,4 @@
+extends: vanilla_lfm.yaml
+
+output_root: runs/lfm_variant/solo_craft/origin
+output_root_is_final: true

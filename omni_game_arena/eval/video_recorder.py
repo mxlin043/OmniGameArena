@@ -26,7 +26,7 @@ class VideoRecorder:
     """Write a real-time MP4 stream from a SoloEnv-like object.
 
     Frames are sampled only while ``env.world_paused`` is false. This keeps
-    paused-decision modes such as PDQ/LCRT from adding duplicate still frames
+    paused-decision modes such as LFM/LCM from adding duplicate still frames
     during model inference.
     """
 

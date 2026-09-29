@@ -3,7 +3,7 @@
 Run from the repository root, one game at a time. These scripts run the
 standard NitroGen test profile by default:
 
-- 1 episode
+- 5 episodes
 - live viewer
 - raw action log
 - MP4 gameplay recording
@@ -55,3 +55,5 @@ Shared defaults live in:
 ```text
 configs\nitrogen\base.yaml
 ```
+
+The shared launcher uses `PYTHON` when set, then the repository `.venv`, then the system Python. Configure the policy endpoint in `configs/router.yaml` as described in the main README; the game host and port are separate.

@@ -53,7 +53,7 @@ class GameSpec:
 
     # Keys that should be pulsed on every chunk step where they appear,
     # instead of being held across consecutive steps. This is useful for
-    # edge-triggered interaction keys such as CookHouse's F key.
+    # edge-triggered interaction keys such as F.
     tap_keys: tuple[str, ...] = ()
 
     # Chunk length for Lumine-style chunked actions, per game. Different

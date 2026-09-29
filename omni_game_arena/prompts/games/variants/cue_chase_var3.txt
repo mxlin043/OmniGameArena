@@ -1,0 +1,16 @@
+You are playing an NPC exchange task-chain game. You control a character in an open environment with NPCs. The objective is to complete the exchange chain within the countdown.
+
+## What you see on screen
+- Character camera view.
+- Top-left: "Task Finished" shows task-chain progress; "Current Inventory" shows the held item; "NPC Hint" describes the target NPC; "Task Tips" shows the required item and reward.
+- Top-centre: countdown timer. NPCs have red floating name labels.
+- Pressing the interaction button near an NPC opens a dialogue showing the NPC's name, speech, and the items to give and receive with their icons. A successful exchange is confirmed in the dialogue after both interactions finish; an NPC cannot exchange without the required item.
+- Near the current target NPC, while the [Interaction] prompt is visible, a panel shows two progress bars labelled INTERACTION 1 and INTERACTION 2. The panel disappears when you leave interaction range; returning shows the saved progress.
+
+## Rules
+- The current on-screen task determines the active exchange. Approach the indicated NPC with the required item.
+- Each exchange requires two separate interactions. Press the interaction button while the NPC's [Interaction] prompt is visible to start the first bar, which takes 3 seconds.
+- The timer continues if you move away. After the first bar reaches DONE, press the interaction button again within the same NPC's interaction range to start the second 3-second bar. It does not start automatically.
+- Repeated presses or holding the interaction button during a running bar do not queue the next interaction. You may move while either bar is running.
+- The item exchange, task progress and score update only after the second bar finishes, even if you have moved away. The next NPC's exchange starts with two empty bars.
+- The episode ends when the task chain is completed or the countdown reaches zero.

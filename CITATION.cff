@@ -1,0 +1,65 @@
+cff-version: 1.2.0
+message: If you use this software, please cite the paper listed below.
+type: software
+title: OmniGameArena
+authors:
+- family-names: Lin
+  given-names: Mingxian
+- family-names: Qian
+  given-names: Shengju
+- family-names: Liu
+  given-names: Yuqi
+- family-names: Huang
+  given-names: Yi-Hua
+- family-names: Wang
+  given-names: Yiyu
+- family-names: Huang
+  given-names: Wei
+- family-names: Li
+  given-names: Yitang
+- family-names: Zhang
+  given-names: Fan
+- family-names: Hu
+  given-names: Zeyu
+- family-names: Zhu
+  given-names: Lingting
+- family-names: Wang
+  given-names: Xin
+- family-names: Qi
+  given-names: Xiaojuan
+repository-code: https://github.com/mxlin043/OmniGameArena
+url: https://mxlin043.github.io/OmniGameArena/
+license: Apache-2.0
+preferred-citation:
+  type: article
+  title: 'OmniGameArena: A Unified UE5 Benchmark for VLM Game Agents with Improvement
+    Dynamics'
+  authors:
+  - family-names: Lin
+    given-names: Mingxian
+  - family-names: Qian
+    given-names: Shengju
+  - family-names: Liu
+    given-names: Yuqi
+  - family-names: Huang
+    given-names: Yi-Hua
+  - family-names: Wang
+    given-names: Yiyu
+  - family-names: Huang
+    given-names: Wei
+  - family-names: Li
+    given-names: Yitang
+  - family-names: Zhang
+    given-names: Fan
+  - family-names: Hu
+    given-names: Zeyu
+  - family-names: Zhu
+    given-names: Lingting
+  - family-names: Wang
+    given-names: Xin
+  - family-names: Qi
+    given-names: Xiaojuan
+  year: 2026
+  journal: arXiv
+  doi: 10.48550/arXiv.2606.09826
+  url: https://arxiv.org/abs/2606.09826

@@ -1,0 +1,10 @@
+extends: variant_lfm.yaml
+
+output_root: runs/lfm_variant/shared_floor/Var4
+output_root_is_final: true
+
+env:
+  map: shared_floor_var4
+
+players_defaults:
+  game_prompt_key: variants/shared_floor_var4_player{player}

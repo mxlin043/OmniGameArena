@@ -42,7 +42,7 @@ echo "===== NitroGen: $GAME ====="
 echo "config=$CONFIG"
 echo "host=$IP port=$PORT"
 echo "standard=$EPISODES episode(s), live, log, gameplay video recording"
-python scripts/run_benchmark.py \
+bash "$SCRIPT_DIR/../run_python.sh" scripts/run_benchmark.py \
   --config "$CONFIG" \
   --host "$IP" \
   --port "$PORT" \

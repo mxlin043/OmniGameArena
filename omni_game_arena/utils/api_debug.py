@@ -48,9 +48,22 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
 import time
 from pathlib import Path
 from typing import Any
+
+
+def _io_path(path: Path) -> Path:
+    """Allow Windows debug files beyond MAX_PATH without changing result paths."""
+    if os.name != "nt":
+        return path
+    absolute = os.path.abspath(path)
+    if absolute.startswith("\\\\?\\"):
+        return Path(absolute)
+    if absolute.startswith("\\\\"):
+        return Path("\\\\?\\UNC\\" + absolute[2:])
+    return Path("\\\\?\\" + absolute)
 
 
 class ApiDebugLogger:
@@ -58,9 +71,9 @@ class ApiDebugLogger:
 
     def __init__(self, out_dir: str | Path):
         self.out_dir = Path(out_dir)
-        self.out_dir.mkdir(parents=True, exist_ok=True)
+        _io_path(self.out_dir).mkdir(parents=True, exist_ok=True)
         self.image_dir = self.out_dir / "images"
-        self.image_dir.mkdir(exist_ok=True)
+        _io_path(self.image_dir).mkdir(exist_ok=True)
         self.call_idx = 0
 
     # -- public API ------------------------------------------------------
@@ -88,7 +101,7 @@ class ApiDebugLogger:
         payload["response"] = self._sanitize_response(response)
 
         out_path = self.out_dir / f"call_{self.call_idx:04d}.json"
-        out_path.write_text(
+        _io_path(out_path).write_text(
             json.dumps(payload, indent=2, ensure_ascii=False, default=str),
             encoding="utf-8",
         )
@@ -188,7 +201,8 @@ class ApiDebugLogger:
         else:
             ext = "jpg"
         path = self.image_dir / f"{h}.{ext}"
-        if not path.exists():
-            path.write_bytes(data)
+        disk_path = _io_path(path)
+        if not disk_path.exists():
+            disk_path.write_bytes(data)
         # Relative path from the call_*.json file (same dir as images/).
         return f"images/{h}.{ext}"

@@ -131,8 +131,8 @@ Respond in markdown with EXACTLY two sections:
 ## Issues found
 
 (For each violation, write one bullet:
-- Rule N — short label: short evidence quote from memo/notebook
-  → suggested fix in plain language.
+- Rule N — short label: "words copied exactly from the offending
+  memo/notebook line" → suggested fix in plain language.
 
 If there are no issues, write the literal text "(none)".)
 
@@ -146,6 +146,13 @@ Be strict. Borderline cases should go to `needs_revision` with a clear
 suggestion. The reflector has a hard cap on validation calls (5 per
 round), so don't refuse trivial things forever — but DO catch real
 violations of the rules above.
+
+Put each piece of evidence in double quotes and copy it character for
+character from one line of the memo or notebook, at least three words
+long. The reflector can submit only a memo you mark `ok`; if its 5th
+draft still gets `needs_revision`, the runner deletes every bullet that
+contains one of your quotes and uses the rest. Quote only text that
+actually breaks a rule.
 
 Do not exceed ~400 words of output total. The reflector reads your
 response as a tool_result and acts on it.

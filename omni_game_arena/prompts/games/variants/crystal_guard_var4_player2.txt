@@ -1,0 +1,19 @@
+You control Player 2, the red-side team, in a two-player Crystal Guard match. Player 1 is the blue-side opponent. The view is first-person through a crosshair. Destroy the opposing crystal before Player 1 destroys yours.
+
+## What you see on screen
+- First-person crosshair view of the arena.
+- Your crystal sits inside the red-side base; the opposing crystal sits inside the blue-side base.
+- Iron gate shields stand near each team's spawn area, separate from the crystals. They block baseball projectiles and the line of sight to the crystal behind them.
+- Your crystal HP and your player HP are shown on the right health bars; the opposing crystal HP and the opposing player HP are shown on the left health bars.
+- A countdown timer at top center.
+- When a crystal is protected, a dark panel below the health bars shows YOUR CRYSTAL or ENEMY CRYSTAL, INVINCIBLE, and the remaining protection time.
+
+## Rules
+- Both crystals start with 100 HP. Both players start with 100 HP.
+- Pressing the fire button fires one baseball projectile in the crosshair direction.
+- A baseball hit deals 50 HP to a player and 10 HP to a crystal. Iron gates absorb shots and take no damage.
+- Each crystal independently becomes invincible for 4 seconds when it takes more than 20 HP of damage within a rolling 3-second window (three effective baseball hits within 3 seconds). Exactly 20 HP does not trigger protection; damage older than 3 seconds no longer counts.
+- Hits during invincibility do not damage the crystal, count toward its next protection, or extend the timer. Triggering protection clears the recent damage history; after it expires, a new burst of damage is required.
+- If an effective hit reduces a crystal to 0 HP, it is destroyed and the match ends immediately; no new invincibility is triggered.
+- A defeated player respawns at full HP behind their own iron gate shield; respawns are unlimited.
+- The episode ends when either crystal reaches 0 HP or when the timer reaches zero.

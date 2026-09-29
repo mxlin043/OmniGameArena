@@ -1,4 +1,4 @@
-You control Player 1, the blue-side team, in a two-player BaseAssault crystal assault match. Player 2 is the red-side opponent. The view is first-person through a crosshair. Destroy the opposing crystal before Player 2 destroys yours.
+You control Player 1, the blue-side team, in a two-player Crystal Guard match. Player 2 is the red-side opponent. The view is first-person through a crosshair. Destroy the opposing crystal before Player 2 destroys yours.
 
 ## What you see on screen
 - First-person crosshair view of the arena.
@@ -9,7 +9,7 @@ You control Player 1, the blue-side team, in a two-player BaseAssault crystal as
 
 ## Rules
 - Both crystals start with 100 HP. Both players start with 100 HP.
-- LMB fires one baseball projectile in the crosshair direction.
+- Pressing the fire button fires one baseball projectile in the crosshair direction.
 - A baseball hit deals 50 HP to a player and 10 HP to a crystal. Iron gates absorb shots and take no damage.
 - A defeated player respawns at full HP behind their own iron gate shield; respawns are unlimited.
 - The episode ends when either crystal reaches 0 HP or when the timer reaches zero.

@@ -11,7 +11,10 @@ The decomposition:
               +------ pure network ------+            + network +
                                           + server + 1 RTT -+
 
-    pure_inference_ms ~= ttfb_ms - tcp_ms        (TCP handshake ~= 1 RTT)
+    estimated_server_processing_ms ~= ttfb_ms - tcp_ms
+
+This estimate includes server queueing and is diagnostic only. It is not
+model inference time and must not be used to charge the LCM game clock.
 """
 
 from __future__ import annotations
@@ -46,7 +49,7 @@ class CallLatency:
     error: Optional[str] = None
 
     @property
-    def pure_inference_ms(self) -> float:
+    def estimated_server_processing_ms(self) -> float:
         """Estimated server-side processing time, network subtracted.
 
         TTFB = last_byte_up (~=0.5 RTT) + server_processing + first_byte_down (~=0.5 RTT)
@@ -64,6 +67,7 @@ class CallLatency:
                 return self.server_latency_ms
             return max(0.0, self.ttfb_ms)
         return max(0.0, self.ttfb_ms - self.tcp_ms)
+
 
 
 def timed_post(
@@ -209,8 +213,8 @@ def timed_post(
         k, v = line.split(":", 1)
         resp_headers[k.strip()] = v.strip()
 
-    # Decode chunked transfer encoding if needed.
-    te = resp_headers.get("Transfer-Encoding", "").lower()
+    # Decode chunked transfer encoding if needed (header names are case-insensitive).
+    te = {k.lower(): v for k, v in resp_headers.items()}.get("transfer-encoding", "").lower()
     if "chunked" in te:
         body_raw = _decode_chunked(body_raw)
 
